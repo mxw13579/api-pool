@@ -1,0 +1,47 @@
+package com.fufu.apipool.service;
+
+import com.fufu.apipool.entity.ProxyEntity;
+
+import java.util.List;
+
+/**
+ * 代理服务接口
+ * 提供代理的增删改查操作
+ * @author lizelin
+ */
+public interface ProxyService {
+
+    /**
+     * 根据ID查询代理
+     * @param id 代理ID
+     * @return 代理实体
+     */
+    ProxyEntity selectById(Long id);
+
+    /**
+     * 查询所有代理
+     * @return 代理列表
+     */
+    List<ProxyEntity> selectAll();
+
+    /**
+     * 新增代理
+     * @param proxyEntity 代理实体
+     * @return 插入行数
+     */
+    int insert(ProxyEntity proxyEntity);
+
+    /**
+     * 更新代理
+     * @param proxyEntity 代理实体
+     * @return 更新行数
+     */
+    int update(ProxyEntity proxyEntity);
+
+    /**
+     * 根据ID删除代理
+     * @param id 代理ID
+     * @return 删除行数
+     */
+    int deleteById(Long id);
+}

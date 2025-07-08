@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.fufu.apipool.mapper.AccountMapper">
+    <resultMap id="AccountEntityMap" type="com.fufu.apipool.entity.AccountEntity">
+        <id property="id" column="id"/>
+        <result property="name" column="name"/>
+        <result property="username" column="username"/>
+        <result property="password" column="password"/>
+        <result property="email" column="email"/>
+        <result property="phone" column="phone"/>
+        <result property="status" column="status"/>
+        <result property="role" column="role"/>
+        <result property="remark" column="remark"/>
+        <result property="lastLoginAt" column="last_login_at"/>
+        <result property="lastLoginIp" column="last_login_ip"/>
+        <result property="createdAt" column="created_at"/>
+        <result property="updatedAt" column="updated_at"/>
+        <result property="deletedAt" column="deleted_at"/>
+        <result property="createdBy" column="created_by"/>
+        <result property="updatedBy" column="updated_by"/>
+        <result property="deletedBy" column="deleted_by"/>
+    </resultMap>
+
+    <select id="selectById" resultMap="AccountEntityMap">
+        SELECT * FROM account WHERE id = #{id}
+    </select>
+
+    <select id="selectAll" resultMap="AccountEntityMap">
+        SELECT * FROM account
+    </select>
+
+    <insert id="insert" parameterType="com.fufu.apipool.entity.AccountEntity">
+        INSERT INTO account
+        (name, username, password, email, phone, status, role, remark, last_login_at, last_login_ip,
+        created_at, updated_at, deleted_at, created_by, updated_by, deleted_by)
+        VALUES
+        (#{name}, #{username}, #{password}, #{email}, #{phone}, #{status}, #{role}, #{remark}, #{lastLoginAt}, #{lastLoginIp},
+        #{createdAt}, #{updatedAt}, #{deletedAt}, #{createdBy}, #{updatedBy}, #{deletedBy})
+    </insert>
+
+    <update id="update" parameterType="com.fufu.apipool.entity.AccountEntity">
+        UPDATE account
+        SET name=#{name}, username=#{username}, password=#{password}, email=#{email}, phone=#{phone},
+        status=#{status}, role=#{role}, remark=#{remark}, last_login_at=#{lastLoginAt}, last_login_ip=#{lastLoginIp},
+        created_at=#{createdAt}, updated_at=#{updatedAt}, deleted_at=#{deletedAt},
+        created_by=#{createdBy}, updated_by=#{updatedBy}, deleted_by=#{deletedBy}
+        WHERE id=#{id}
+    </update>
+
+    <delete id="deleteById" parameterType="long">
+        DELETE FROM account WHERE id = #{id}
+    </delete>
+</mapper>

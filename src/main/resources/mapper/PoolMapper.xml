@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.fufu.apipool.mapper.PoolMapper">
+    <resultMap id="PoolEntityMap" type="com.fufu.apipool.entity.PoolEntity">
+        <id property="id" column="id"/>
+        <result property="name" column="name"/>
+        <result property="endpoint" column="endpoint"/>
+        <result property="username" column="username"/>
+        <result property="password" column="password"/>
+        <result property="address" column="address"/>
+        <result property="monitoringIntervalTime" column="monitoring_interval_time"/>
+        <result property="createdAt" column="created_at"/>
+        <result property="updatedAt" column="updated_at"/>
+        <result property="deletedAt" column="deleted_at"/>
+        <result property="createdBy" column="created_by"/>
+        <result property="updatedBy" column="updated_by"/>
+        <result property="deletedBy" column="deleted_by"/>
+    </resultMap>
+
+    <select id="selectById" resultMap="PoolEntityMap">
+        SELECT * FROM pool WHERE id = #{id}
+    </select>
+
+    <select id="selectAll" resultMap="PoolEntityMap">
+        SELECT * FROM pool
+    </select>
+
+    <insert id="insert" parameterType="com.fufu.apipool.entity.PoolEntity">
+        INSERT INTO pool
+        (name, endpoint, username, password, address, monitoring_interval_time,
+        created_at, updated_at, deleted_at, created_by, updated_by, deleted_by)
+        VALUES
+        (#{name}, #{endpoint}, #{username}, #{password}, #{address}, #{monitoringIntervalTime},
+        #{createdAt}, #{updatedAt}, #{deletedAt}, #{createdBy}, #{updatedBy}, #{deletedBy})
+    </insert>
+
+    <update id="update" parameterType="com.fufu.apipool.entity.PoolEntity">
+        UPDATE pool
+        SET name=#{name}, endpoint=#{endpoint}, username=#{username}, password=#{password}, address=#{address},
+        monitoring_interval_time=#{monitoringIntervalTime},
+        created_at=#{createdAt}, updated_at=#{updatedAt}, deleted_at=#{deletedAt},
+        created_by=#{createdBy}, updated_by=#{updatedBy}, deleted_by=#{deletedBy}
+        WHERE id=#{id}
+    </update>
+
+    <delete id="deleteById" parameterType="long">
+        DELETE FROM pool WHERE id = #{id}
+    </delete>
+</mapper>
