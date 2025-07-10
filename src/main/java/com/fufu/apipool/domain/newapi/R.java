@@ -20,4 +20,8 @@ public class R<T> {
      * 数据
      */
     private T data;
+    /**
+     * 时间
+     */
+    private long time;
 }

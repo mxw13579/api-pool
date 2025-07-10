@@ -1,6 +1,8 @@
 package com.fufu.apipool.common.constant;
 
 
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonValue;
 import lombok.Getter;
 
 /**
@@ -226,21 +228,14 @@ public enum ChannelType {
         this.description = description;
     }
 
+    @JsonValue
     public int getCode() {
         return code;
     }
-
-    public String getIdentifier() {
-        return identifier;
-    }
-
-    public String getDescription() {
-        return description;
-    }
-
     /**
      * 根据code获取枚举
      */
+    @JsonCreator
     public static ChannelType fromCode(int code) {
         for (ChannelType type : ChannelType.values()) {
             if (type.code == code) {

@@ -21,4 +21,12 @@ public class ProxyEntity extends BaseEntity {
      * 代理来源
      */
     private String source;
+    /**
+     * 代理地址
+     */
+    private String address;
+    /**
+     * 代理状态
+     */
+    private Integer status;
 }

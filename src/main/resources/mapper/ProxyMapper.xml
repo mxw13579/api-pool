@@ -16,29 +16,32 @@
     </resultMap>
 
     <select id="selectById" resultMap="ProxyEntityMap">
-        SELECT * FROM proxy WHERE id = #{id}
+        SELECT * FROM proxy WHERE id = #{id} AND deleted_at IS NULL
     </select>
 
     <select id="selectAll" resultMap="ProxyEntityMap">
-        SELECT * FROM proxy
+        SELECT * FROM proxy WHERE deleted_at IS NULL
     </select>
 
     <insert id="insert" parameterType="com.fufu.apipool.entity.ProxyEntity">
         INSERT INTO proxy
-        (name, proxy_url, source, created_at, updated_at, deleted_at, created_by, updated_by, deleted_by)
+        (name, proxy_url, source, created_at, updated_at, created_by, updated_by, deleted_by)
         VALUES
-        (#{name}, #{proxyUrl}, #{source}, #{createdAt}, #{updatedAt}, #{deletedAt}, #{createdBy}, #{updatedBy}, #{deletedBy})
+        (#{name}, #{proxyUrl}, #{source}, #{createdAt}, #{updatedAt}, #{createdBy}, #{updatedBy}, #{deletedBy})
     </insert>
 
     <update id="update" parameterType="com.fufu.apipool.entity.ProxyEntity">
         UPDATE proxy
         SET name=#{name}, proxy_url=#{proxyUrl}, source=#{source},
-        created_at=#{createdAt}, updated_at=#{updatedAt}, deleted_at=#{deletedAt},
+        created_at=#{createdAt}, updated_at=#{updatedAt},
         created_by=#{createdBy}, updated_by=#{updatedBy}, deleted_by=#{deletedBy}
-        WHERE id=#{id}
+        WHERE id=#{id} AND deleted_at IS NULL
     </update>
 
-    <delete id="deleteById" parameterType="long">
-        DELETE FROM proxy WHERE id = #{id}
-    </delete>
+    <!-- 逻辑删除：只允许设置deleted_at和deleted_by -->
+    <update id="deleteById">
+        UPDATE proxy
+        SET deleted_at=#{deletedAt}, deleted_by=#{deletedBy}
+        WHERE id=#{id} AND deleted_at IS NULL
+    </update>
 </mapper>

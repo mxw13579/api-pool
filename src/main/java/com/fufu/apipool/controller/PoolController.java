@@ -24,10 +24,69 @@ public class PoolController {
 
     private final PoolService poolService;
 
-
+    /**
+     * 根据号池ID查询渠道列表
+     * @param poolId 号池ID
+     * @return Result对象，包含渠道列表
+     */
     @GetMapping("/getChannelsByPoolId")
     public Result<List<Channel>> getChannelsByPoolId(@RequestParam Long poolId) {
         return ResultUtil.getSuccessResult( poolService.getChannelsByPoolId(poolId));
+    }
+
+    /**
+     * 根据号池ID和渠道ID查询渠道信息
+     * @param poolId 号池ID
+     * @param channelId 渠道ID
+     * @return Result对象，包含渠道信息
+     */
+    @GetMapping("/getChannelByPoolId/{poolId}")
+    public Result<Channel> getChannelByPoolId(@PathVariable("poolId") Long poolId,@RequestParam Long channelId) {
+        return ResultUtil.getSuccessResult( poolService.getChannelByPoolId(poolId,channelId));
+    }
+
+    /**
+     * 根据号池ID添加渠道
+     * @param poolId 号池ID
+     * @param channel 渠道信息
+     * @return Result对象，包含添加结果
+     */
+    @PostMapping("/addChannelsByPoolId/{poolId}")
+    public Result<Boolean> addChannelByPoolId(@PathVariable("poolId") Long poolId,@RequestBody Channel channel) {
+        return ResultUtil.getSuccessResult(poolService.addChannelByPoolId(poolId,channel));
+    }
+
+    /**
+     * 根据号池ID和渠道ID更新渠道信息
+     * @param poolId 号池ID
+     * @param channel 渠道信息
+     * @return Result对象，包含更新结果
+     */
+    @PutMapping("/updateChannelByPoolId/{poolId}")
+    public Result<Boolean> updateChannelByPoolId(@PathVariable("poolId") Long poolId,@RequestBody Channel channel) {
+        return ResultUtil.getSuccessResult(poolService.updateChannelByPoolId(poolId,channel));
+    }
+
+    /**
+     * 根据号池ID和渠道ID删除渠道信息
+     * @param poolId 号池ID
+     * @param channelId 渠道信息
+     * @return Result对象，包含更新结果
+     */
+    @DeleteMapping("/deleteChannelByPoolId/{poolId}")
+    public Result<Boolean> deleteChannelByPoolId(@PathVariable("poolId") Long poolId,@RequestParam Long channelId) {
+        return ResultUtil.getSuccessResult(poolService.deleteChannelByPoolId(poolId,channelId));
+    }
+
+    /**
+     * 测试渠道
+     * @param poolId 号池ID
+     * @param channelId 渠道ID
+     * @return Result对象，包含测试结果
+     */
+    @PutMapping("/testChannelByPoolId/{poolId}")
+    public Result<Long> updateChannelByPoolId(@PathVariable("poolId") Long poolId,@RequestParam Long channelId) {
+        return ResultUtil.getSuccessResult(poolService.testChannelByPoolId(poolId,channelId));
     }
     /**
      * 查询所有号池

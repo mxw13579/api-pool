@@ -27,8 +27,8 @@ class ApiPoolApplicationTests {
         try {
             // 构建登录请求参数
             LoginRequest request = new LoginRequest();
-            request.setUsername("you-username");
-            request.setPassword("you-password");
+            request.setUsername("lizelin");
+            request.setPassword("U93OzLV7yBD06d9e");
             // 发送登录POST请求
             HttpRequest postRequest = HttpUtil.createPost("http://45.192.111.246:3000/api/user/login?turnstile=");
             postRequest.body(JSON.toJSONString(request));

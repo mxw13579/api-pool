@@ -19,32 +19,35 @@
     </resultMap>
 
     <select id="selectById" resultMap="PoolEntityMap">
-        SELECT * FROM pool WHERE id = #{id}
+        SELECT * FROM pool WHERE id = #{id} AND deleted_at IS NULL
     </select>
 
     <select id="selectAll" resultMap="PoolEntityMap">
-        SELECT * FROM pool
+        SELECT * FROM pool WHERE deleted_at IS NULL
     </select>
 
     <insert id="insert" parameterType="com.fufu.apipool.entity.PoolEntity">
         INSERT INTO pool
         (name, endpoint, username, password, address, monitoring_interval_time,
-        created_at, updated_at, deleted_at, created_by, updated_by, deleted_by)
+        created_at, updated_at, created_by, updated_by, deleted_by)
         VALUES
         (#{name}, #{endpoint}, #{username}, #{password}, #{address}, #{monitoringIntervalTime},
-        #{createdAt}, #{updatedAt}, #{deletedAt}, #{createdBy}, #{updatedBy}, #{deletedBy})
+        #{createdAt}, #{updatedAt}, #{createdBy}, #{updatedBy}, #{deletedBy})
     </insert>
 
     <update id="update" parameterType="com.fufu.apipool.entity.PoolEntity">
         UPDATE pool
         SET name=#{name}, endpoint=#{endpoint}, username=#{username}, password=#{password}, address=#{address},
         monitoring_interval_time=#{monitoringIntervalTime},
-        created_at=#{createdAt}, updated_at=#{updatedAt}, deleted_at=#{deletedAt},
+        created_at=#{createdAt}, updated_at=#{updatedAt},
         created_by=#{createdBy}, updated_by=#{updatedBy}, deleted_by=#{deletedBy}
-        WHERE id=#{id}
+        WHERE id=#{id} AND deleted_at IS NULL
     </update>
 
-    <delete id="deleteById" parameterType="long">
-        DELETE FROM pool WHERE id = #{id}
-    </delete>
+    <!-- 逻辑删除：只允许设置deleted_at和deleted_by -->
+    <update id="deleteById">
+        UPDATE pool
+        SET deleted_at=#{deletedAt}, deleted_by=#{deletedBy}
+        WHERE id=#{id} AND deleted_at IS NULL
+    </update>
 </mapper>

@@ -46,5 +46,51 @@ public interface PoolService {
      */
     int deleteById(Long id);
 
+    /**
+     * 根据号池ID查询渠道
+     * @param poolId 号池ID
+     * @return 渠道列表
+     */
     List<Channel> getChannelsByPoolId(Long poolId);
+
+    /**
+     * 根据号池ID更新渠道
+     * @param poolId 号池ID
+     * @param channel 渠道实体
+     * @return 更新行数
+     */
+    Boolean updateChannelByPoolId(Long poolId, Channel channel);
+
+    /**
+     * 根据ID测试号池下的渠道信息
+     * @param poolId 号池ID
+     * @param channelId 渠道id
+     * @return long 测试结果
+     */
+    long testChannelByPoolId(Long poolId, Long channelId);
+
+    /**
+     * 根据号池ID添加渠道信息
+     *
+     * @param poolId  号池ID
+     * @param channel
+     * @return 添加结果
+     */
+    Boolean addChannelByPoolId(Long poolId, Channel channel);
+
+    /**
+     * 根据 号池ID和渠道ID查询渠道信息
+     * @param poolId 号池ID
+     * @param channelId 渠道ID
+     * @return 渠道信息
+     */
+    Channel getChannelByPoolId(Long poolId, Long channelId);
+
+    /**
+     * 根据号池ID和渠道ID删除渠道信息
+     * @param poolId 号池ID
+     * @param channelId 渠道信息
+     * @return 删除结果
+     */
+    Boolean deleteChannelByPoolId(Long poolId, Long channelId);
 }

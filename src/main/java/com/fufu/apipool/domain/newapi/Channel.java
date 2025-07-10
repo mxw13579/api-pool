@@ -1,6 +1,5 @@
 package com.fufu.apipool.domain.newapi;
 
-import com.fufu.apipool.common.BaseEntity;
 import com.fufu.apipool.common.constant.ChannelStatus;
 import com.fufu.apipool.common.constant.ChannelType;
 import lombok.Data;

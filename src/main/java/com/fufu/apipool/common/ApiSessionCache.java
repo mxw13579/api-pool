@@ -4,6 +4,7 @@ import cn.hutool.http.HttpRequest;
 import cn.hutool.http.HttpResponse;
 import com.alibaba.fastjson2.JSON;
 import com.alibaba.fastjson2.TypeReference;
+import com.fufu.apipool.common.constant.ApiUrlEnum;
 import com.fufu.apipool.domain.newapi.LoginRequest;
 import com.fufu.apipool.domain.newapi.R;
 import com.fufu.apipool.domain.newapi.User;
@@ -68,7 +69,7 @@ public class ApiSessionCache {
             LoginRequest request = new LoginRequest();
             request.setUsername(poolEntity.getUsername());
             request.setPassword(poolEntity.getPassword());
-            HttpRequest postRequest = HttpRequest.post(poolEntity.getEndpoint());
+            HttpRequest postRequest = HttpRequest.post(poolEntity.getEndpoint() + ApiUrlEnum.LOGIN.getUrl());
             postRequest.body(JSON.toJSONString(request));
             HttpResponse loginResponse = postRequest.execute();
             List<HttpCookie> cookies = loginResponse.getCookies();

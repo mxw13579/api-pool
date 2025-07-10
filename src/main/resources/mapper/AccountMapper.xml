@@ -23,32 +23,35 @@
     </resultMap>
 
     <select id="selectById" resultMap="AccountEntityMap">
-        SELECT * FROM account WHERE id = #{id}
+        SELECT * FROM account WHERE id = #{id} AND deleted_at IS NULL
     </select>
 
     <select id="selectAll" resultMap="AccountEntityMap">
-        SELECT * FROM account
+        SELECT * FROM account WHERE deleted_at IS NULL
     </select>
 
     <insert id="insert" parameterType="com.fufu.apipool.entity.AccountEntity">
         INSERT INTO account
         (name, username, password, email, phone, status, role, remark, last_login_at, last_login_ip,
-        created_at, updated_at, deleted_at, created_by, updated_by, deleted_by)
+        created_at, updated_at, created_by, updated_by, deleted_by)
         VALUES
         (#{name}, #{username}, #{password}, #{email}, #{phone}, #{status}, #{role}, #{remark}, #{lastLoginAt}, #{lastLoginIp},
-        #{createdAt}, #{updatedAt}, #{deletedAt}, #{createdBy}, #{updatedBy}, #{deletedBy})
+        #{createdAt}, #{updatedAt}, #{createdBy}, #{updatedBy}, #{deletedBy})
     </insert>
 
     <update id="update" parameterType="com.fufu.apipool.entity.AccountEntity">
         UPDATE account
         SET name=#{name}, username=#{username}, password=#{password}, email=#{email}, phone=#{phone},
         status=#{status}, role=#{role}, remark=#{remark}, last_login_at=#{lastLoginAt}, last_login_ip=#{lastLoginIp},
-        created_at=#{createdAt}, updated_at=#{updatedAt}, deleted_at=#{deletedAt},
+        created_at=#{createdAt}, updated_at=#{updatedAt},
         created_by=#{createdBy}, updated_by=#{updatedBy}, deleted_by=#{deletedBy}
-        WHERE id=#{id}
+        WHERE id=#{id} AND deleted_at IS NULL
     </update>
 
-    <delete id="deleteById" parameterType="long">
-        DELETE FROM account WHERE id = #{id}
-    </delete>
+    <!-- 逻辑删除：只允许设置deleted_at和deleted_by -->
+    <update id="deleteById">
+        UPDATE account
+        SET deleted_at=#{deletedAt}, deleted_by=#{deletedBy}
+        WHERE id=#{id} AND deleted_at IS NULL
+    </update>
 </mapper>

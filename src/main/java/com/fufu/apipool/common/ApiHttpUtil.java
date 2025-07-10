@@ -1,8 +1,10 @@
 package com.fufu.apipool.common;
 
+import cn.hutool.aop.ProxyUtil;
 import cn.hutool.extra.spring.SpringUtil;
 import cn.hutool.http.HttpRequest;
 import cn.hutool.http.HttpResponse;
+import cn.hutool.http.HttpUtil;
 import cn.hutool.http.Method;
 import com.alibaba.fastjson2.JSON;
 import com.fufu.apipool.common.constant.ApiUrlEnum;
@@ -53,7 +55,8 @@ public class ApiHttpUtil {
 
         // 构建请求
         HttpRequest request = HttpRequest.of(fullUrl)
-                .method(Method.valueOf(apiUrlEnum.getMethod()));
+                .method(Method.valueOf(apiUrlEnum.getMethod())).timeout(60000);
+
 
         if (!cookies.isEmpty()) {
             request.cookie(cookies.get(0));

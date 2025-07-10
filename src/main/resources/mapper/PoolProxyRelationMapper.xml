@@ -1,0 +1,59 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.fufu.apipool.mapper.PoolProxyRelationMapper">
+
+    <!-- 实体映射 -->
+    <resultMap id="PoolProxyRelationResultMap" type="com.fufu.apipool.entity.PoolProxyRelationEntity">
+        <id property="id" column="id"/>
+        <result property="poolId" column="pool_id"/>
+        <result property="proxyId" column="proxy_id"/>
+        <result property="createdAt" column="created_at"/>
+        <result property="updatedAt" column="updated_at"/>
+        <result property="deletedAt" column="deleted_at"/>
+        <result property="createdBy" column="created_by"/>
+        <result property="updatedBy" column="updated_by"/>
+        <result property="deletedBy" column="deleted_by"/>
+    </resultMap>
+
+    <!-- 新增关联关系 -->
+    <insert id="insert" parameterType="com.fufu.apipool.entity.PoolProxyRelationEntity">
+        INSERT INTO pool_proxy_relation
+        (pool_id, proxy_id, created_at, updated_at, created_by, updated_by)
+        VALUES
+        (#{poolId}, #{proxyId}, #{createdAt}, #{updatedAt}, #{createdBy}, #{updatedBy})
+    </insert>
+
+    <!-- 根据号池ID查询（只查未软删） -->
+    <select id="selectByPoolId" resultMap="PoolProxyRelationResultMap">
+        SELECT * FROM pool_proxy_relation
+        WHERE pool_id = #{poolId} AND deleted_at IS NULL
+    </select>
+
+    <!-- 分页查询所有未被软删除的关联关系 -->
+    <select id="selectAll" resultMap="PoolProxyRelationResultMap">
+        SELECT * FROM pool_proxy_relation
+        WHERE deleted_at IS NULL
+        ORDER BY id DESC
+        LIMIT #{limit} OFFSET #{offset}
+    </select>
+
+    <!-- 查询所有未被软删除的关联关系总数 -->
+    <select id="countAll" resultType="int">
+        SELECT COUNT(*) FROM pool_proxy_relation
+        WHERE deleted_at IS NULL
+    </select>
+
+    <!-- 根据代理ID查询（只查未软删） -->
+    <select id="selectByProxyId" resultMap="PoolProxyRelationResultMap">
+        SELECT * FROM pool_proxy_relation
+        WHERE proxy_id = #{proxyId} AND deleted_at IS NULL
+    </select>
+
+    <!-- 软删除：更新deleted_at字段 -->
+    <update id="deleteById" parameterType="com.fufu.apipool.entity.PoolProxyRelationEntity">
+        UPDATE pool_proxy_relation
+        SET deleted_at = #{deletedAt}, deleted_by = #{deletedBy}
+        WHERE id = #{id}
+    </update>
+</mapper>
