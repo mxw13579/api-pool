@@ -118,6 +118,27 @@
         </span>
       </template>
     </el-dialog>
+    <el-dialog
+        v-model="batchResultDialogVisible"
+        title="批量新增渠道结果"
+        width="600px"
+        :close-on-click-modal="false"
+    >
+      <div style="margin-bottom: 16px;">
+        共计 {{ totalCount }} 条渠道，成功 {{ successCount }} 条，失败 {{ failCount }} 条
+      </div>
+      <div style="max-height: 400px; overflow-y: auto;">
+        <ul>
+          <li v-for="(msg, idx) in batchResultList" :key="idx" style="margin-bottom: 8px;">
+            {{ msg }}
+          </li>
+        </ul>
+      </div>
+      <template #footer>
+        <el-button type="primary" @click="batchResultDialogVisible = false">确认</el-button>
+      </template>
+    </el-dialog>
+
   </div>
 </template>
 
@@ -140,6 +161,18 @@ const formRef = ref();
 
 const channelDialogVisible = ref(false);
 const currentPoolId = ref<number | null>(null);
+const batchResultDialogVisible = ref(false);
+const batchResultList = ref<string[]>([]);
+
+import { computed } from 'vue';
+
+const totalCount = computed(() => batchResultList.value.length);
+const successCount = computed(() =>
+    batchResultList.value.filter(msg => msg.includes('成功')).length
+);
+const failCount = computed(() =>
+    batchResultList.value.filter(msg => msg.includes('失败') || msg.includes('异常')).length
+);
 
 // [新增] 批量新增渠道功能相关的状态和逻辑
 const batchAddDialogVisible = ref(false);
@@ -177,16 +210,27 @@ const handleBatchSubmit = async () => {
     return;
   }
   try {
-    // 调用新的后端接口
-    await batchAddChannelToAll(batchChannelForm.value);
-    ElMessage.success('批量新增渠道任务已提交');
-    batchAddDialogVisible.value = false;
-  } catch (error) {
-    ElMessage.error('批量新增渠道失败');
+    const res = await batchAddChannelToAll(batchChannelForm.value);
+    if (Array.isArray(res)) {
+      batchResultList.value = res;
+      batchResultDialogVisible.value = true; // 打开结果弹窗
+      batchAddDialogVisible.value = false;   // 关闭表单弹窗
+    } else {
+      ElMessage.error('批量新增渠道失败，返回数据格式异常');
+    }
+  } catch (error: any) {
+    if (error.response?.data?.msg) {
+      ElMessage.error(error.response.data.msg);
+    } else if (error.msg) {
+      ElMessage.error(error.msg);
+    } else {
+      ElMessage.error('批量新增渠道失败');
+    }
     console.error(error);
   }
 };
-// [新增结束]
+
+
 
 const fetchPools = async () => {
   loading.value = true;

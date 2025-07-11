@@ -10,6 +10,14 @@ import java.util.List;
  */
 public interface AccountService {
     /**
+     * 实现登录功能
+     * @param username 用户名
+     * @param password 密码
+     * @return 登录成功后返回 Token
+     */
+    String login(String username, String password);
+
+    /**
      * 根据ID查询账号
      * @param id 账号ID
      * @return 账号实体
@@ -42,4 +50,10 @@ public interface AccountService {
      * @return 删除行数
      */
     int deleteById(Long id);
+
+    /**
+     * 查询账号总数
+     * @return 账号总数
+     */
+    long count();
 }

@@ -26,6 +26,7 @@ import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -147,6 +148,7 @@ public class PoolServiceImpl implements PoolService {
         String send = apiHttpUtil.send(poolId, ApiUrlEnum.TEST, pathVars, null, null);
         R r = JSON.parseObject(send, R.class);
         if (!r.getSuccess().equals(true)) {
+            log.error("测试渠道失败: {}", r);
             throw new RuntimeException("测试渠道失败");
         }
         return r.getTime();
@@ -156,18 +158,11 @@ public class PoolServiceImpl implements PoolService {
      * 根据ID添加号池下的渠道信息
      *
      * @param poolId  号池ID
-     * @param dto 渠道信息
-     * @return Boolean 添加结果
-     */
-    /**
-     * 根据ID添加号池下的渠道信息
-     *
-     * @param poolId  号池ID
      * @param dto 渠道信息，包含代理选择策略
      * @return Boolean 添加结果
      */
     @Override
-    @Transactional // 添加事务管理，确保API调用和数据库操作的原子性
+    @Transactional
     public Boolean addChannelByPoolId(Long poolId, ChannelDTO dto) {
         Channel channel = BeanUtil.copyProperties(dto, Channel.class);
         Integer proxyStrategy = dto.getProxy(); // 0: 随机, 1: 轮询
@@ -194,11 +189,12 @@ public class PoolServiceImpl implements PoolService {
         if (selectedProxy != null) {
             String proxyUrl = selectedProxy.getProxyUrl();
             //proxyUrl 如果不是 socket5开头则添加
-            if (!proxyUrl.startsWith("socket5")) {
+            if (!proxyUrl.startsWith("socks5")) {
                 proxyUrl = "socks5://" + proxyUrl;
             }
             // 格式化为JSON字符串: {"proxy":"http://user:pass@host:port"}
             channel.setSetting("{\"proxy\":\"" + proxyUrl + "\"}");
+            dto.setSetting(proxyUrl);
             log.info("选定代理: ID={}, URL={}", selectedProxy.getId(), proxyUrl);
         }
 
@@ -281,12 +277,12 @@ public class PoolServiceImpl implements PoolService {
      * @return 如果所有操作都成功，则返回 true，否则返回 false。
      */
     @Override
-    public Boolean batchAddChannelToAll(ChannelDTO dto) {
+    public List<String> batchAddChannelToAll(ChannelDTO dto) {
         // 1. 获取所有号池
-        List<PoolEntity> allPools = this.selectAll(); // 调用已有的 selectAll 方法
+        List<PoolEntity> allPools = this.selectAll();
         if (allPools == null || allPools.isEmpty()) {
             log.warn("批量新增渠道失败：系统中没有任何号池。");
-            return false; // 或者可以抛出异常，提示前端
+            throw new RuntimeException("批量新增渠道失败：系统中没有任何号池。");
         }
 
         log.info("开始为 {} 个号池批量新增渠道，渠道名称: {}", allPools.size(), dto.getName());
@@ -294,35 +290,48 @@ public class PoolServiceImpl implements PoolService {
         String key = dto.getKey();
 
         JSONArray objects = JSON.parseArray(key);
-        //转换为list
+        // 转换为list
         List<String> list = objects.toJavaList(String.class);
 
         int size = allPools.size();
         int offset = 0;
+        List<String> ret = new ArrayList<>();
         for (int i = 0; i < list.size(); i++) {
 
             ChannelDTO channelDTO = BeanUtil.copyProperties(dto, ChannelDTO.class);
             channelDTO.setKey(list.get(i));
-            channelDTO.setName(dto.getName()+"-"+i);
+            channelDTO.setName(dto.getName() + "-" + i);
             try {
                 // 3. 复用现有的 `addChannelByPoolId` 逻辑
                 Boolean success = this.addChannelByPoolId(allPools.get(offset).getId(), channelDTO);
                 if (success != null && success) {
-                    log.info("成功为号池 ID: {}, 名称: {} 添加渠道 {}", allPools.get(offset).getId(), allPools.get(offset).getName(), dto.getName());
+                    // 写入成功信息
+                    String msg = String.format("成功为号池 ID: %s, 名称: %s 添加渠道 %s 成功,代理为 %s",
+                            allPools.get(offset).getId(), allPools.get(offset).getName(), channelDTO.getName(),channelDTO.getSetting());
+                    ret.add(msg);
+                    log.info(msg);
                 } else {
-                    log.error("为号池 ID: {}, 名称: {} 添加渠道 {} 失败。", allPools.get(offset).getId(), allPools.get(offset).getName(), dto.getName());
+                    // 写入失败信息
+                    String msg = String.format("为号池 ID: %s, 名称: %s 添加渠道 %s 失败。",
+                            allPools.get(offset).getId(), allPools.get(offset).getName(), channelDTO.getName());
+                    ret.add(msg);
+                    log.error(msg);
                 }
             } catch (Exception e) {
-                log.error("为号池 ID: {}, 名称: {} 添加渠道 {} 时发生异常。", allPools.get(offset).getId(), allPools.get(offset).getName(), dto.getName(), e);
+                // 写入异常信息
+                String msg = String.format("为号池 ID: %s, 名称: %s 添加渠道 %s 时发生异常：%s",
+                        allPools.get(offset).getId(), allPools.get(offset).getName(), channelDTO.getName(), e.getMessage());
+                ret.add(msg);
+                log.error(msg, e);
             }
 
-            if (offset >= size - 1){
+            if (offset >= size - 1) {
                 offset = 0;
-            }else {
-                offset ++;
+            } else {
+                offset++;
             }
-
         }
-        return true;
+        return ret;
     }
+
 }

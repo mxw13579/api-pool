@@ -1,6 +1,8 @@
 package com.fufu.apipool.common.init;
 
 import com.fufu.apipool.common.BaseEntity;
+import com.fufu.apipool.entity.AccountEntity;
+import com.fufu.apipool.service.AccountService;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -42,32 +44,71 @@ public class DatabaseEntitySynchronizer implements ApplicationRunner {
     private DataSource dataSource;
     @Value("${spring.datasource.url:}")
     private String dataSourceUrl;
+    @Autowired
+    private AccountService accountService;
+
     @Override
     public void run(ApplicationArguments args) throws Exception {
-        // 1. 在获取连接前，确保 SQLite 数据库文件目录存在
-        if (dataSourceUrl != null && dataSourceUrl.startsWith("jdbc:sqlite:")) {
-            String dbPath = dataSourceUrl.substring("jdbc:sqlite:".length());
-            java.io.File dbFile = new java.io.File(dbPath);
-            java.io.File parentDir = dbFile.getAbsoluteFile().getParentFile();
-            if (parentDir != null && !parentDir.exists()) {
-                boolean created = parentDir.mkdirs();
-                if (!created) {
-                    log.warn("Failed to create database directory: {}", parentDir.getAbsolutePath());
+        log.info("开始执行数据库实体同步...");
+        try {
+            // 1. 在获取连接前，确保 SQLite 数据库文件目录存在
+            if (dataSourceUrl != null && dataSourceUrl.startsWith("jdbc:sqlite:")) {
+                String dbPath = dataSourceUrl.substring("jdbc:sqlite:".length());
+                java.io.File dbFile = new java.io.File(dbPath);
+                java.io.File parentDir = dbFile.getAbsoluteFile().getParentFile();
+                if (parentDir != null && !parentDir.exists()) {
+                    boolean created = parentDir.mkdirs();
+                    if (!created) {
+                        log.warn("Failed to create database directory: {}", parentDir.getAbsolutePath());
+                    }
                 }
             }
-        }
-        // 获取所有BaseEntity子类
-        List<Class<?>> entityClasses = new ArrayList<>();
-        String basePackage = "com.fufu.apipool.entity";
-        for (Class<?> clazz : getClasses(basePackage)) {
-            if (BaseEntity.class.isAssignableFrom(clazz) && !clazz.equals(BaseEntity.class)) {
-                entityClasses.add(clazz);
+            // 获取所有BaseEntity子类
+            List<Class<?>> entityClasses = new ArrayList<>();
+            String basePackage = "com.fufu.apipool.entity";
+            for (Class<?> clazz : getClasses(basePackage)) {
+                if (BaseEntity.class.isAssignableFrom(clazz) && !clazz.equals(BaseEntity.class)) {
+                    entityClasses.add(clazz);
+                }
             }
-        }
-        try (Connection conn = dataSource.getConnection()) {
-            for (Class<?> entityClass : entityClasses) {
-                syncTable(conn, entityClass);
+            try (Connection conn = dataSource.getConnection()) {
+                for (Class<?> entityClass : entityClasses) {
+                    syncTable(conn, entityClass);
+                }
             }
+            initDefaultAdminAccount();
+        } catch (Exception e) {
+            log.error("数据库实体同步失败", e);
+        }
+    }
+
+
+    /**
+     * 初始化默认管理员账号
+     */
+    private void initDefaultAdminAccount() {
+        try {
+            // 1. 检查数据库中是否已有用户
+            if (accountService.count() == 0) {
+                log.info("数据库中无用户，开始初始化默认管理员...");
+
+                // 2. 创建一个默认的管理员实体
+                AccountEntity admin = new AccountEntity();
+                admin.setName("Administrator");
+                admin.setUsername("admin");
+                admin.setPassword("admin");
+                admin.setRole("admin");
+                admin.setStatus(1);
+                admin.setEmail("admin@example.com");
+
+                // 3. 调用 service 层的方法插入用户
+                accountService.insert(admin);
+                log.info("默认管理员(admin/admin)创建成功！");
+            } else {
+                log.info("数据库中已存在用户，跳过初始化。");
+            }
+        } catch (Exception e) {
+            log.error("初始化默认管理员账号失败！", e);
         }
     }
 

@@ -9,6 +9,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
 
+import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ThreadLocalRandom;
@@ -33,6 +35,7 @@ public class ProxyCacheServiceImpl implements ProxyCacheService {
 
     // 轮询计数器
     private final AtomicInteger roundRobinIndex = new AtomicInteger(0);
+    private volatile List<ProxyEntity> activeProxyList = new ArrayList<>();
 
     /**
      * Bean初始化时，加载所有代理到缓存
@@ -41,6 +44,11 @@ public class ProxyCacheServiceImpl implements ProxyCacheService {
     public void init() {
         log.info("初始化代理缓存...");
         refreshCache();
+        List<ProxyEntity> activeList = proxyCache.values().stream()
+                .filter(p -> p.getStatus() != null && p.getStatus() == 1)
+                .sorted(Comparator.comparing(ProxyEntity::getId))
+                .collect(Collectors.toList());
+        activeProxyList = activeList;
     }
 
     @Override
@@ -56,14 +64,14 @@ public class ProxyCacheServiceImpl implements ProxyCacheService {
 
     @Override
     public ProxyEntity getRoundRobinProxy() {
-        List<ProxyEntity> activeProxies = getActiveProxies();
-        if (activeProxies.isEmpty()) {
-            log.warn("缓存中没有可用的启用状态的代理");
+        List<ProxyEntity> proxies = activeProxyList;
+        int size = proxies.size();
+        if (size == 0) {
+            log.info("缓存中没有可用的启用状态的代理");
             return null;
         }
-        // 使用 getAndIncrement() 实现原子性的“先获取再增加”
-        int currentIndex = roundRobinIndex.getAndIncrement() % activeProxies.size();
-        return activeProxies.get(currentIndex);
+        int index = Math.abs(roundRobinIndex.getAndIncrement()) % size;
+        return proxies.get(index);
     }
 
     @Override

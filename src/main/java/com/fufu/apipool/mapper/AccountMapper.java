@@ -40,4 +40,19 @@ public interface AccountMapper {
      * @return 删除的行数
      */
     int deleteById(Long id);
+
+    /**
+     * 根据用户名查询账号
+     * @param username 用户名
+     * @return 账号
+     */
+    AccountEntity selectByUsername(String username);
+
+    /**
+     * 查询账号总数
+     * @return 账号总数
+     */
+    long count();
+
+
 }

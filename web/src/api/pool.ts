@@ -1,12 +1,12 @@
 import request from './index';
-import type { PoolEntity, Channel } from '@/types';
+import {PoolEntity, Channel, ApiResponse} from '@/types';
 
 /**
  * 批量为所有号池新增一个渠道
  * @param data 渠道信息对象，类型为 ChannelDTO 在后端对应，前端可以用 Partial<Channel>
- * @returns Promise<boolean>
+ * @returns ApiResponse<string[]>
  */
-export function batchAddChannelToAll(data: Partial<Channel>): Promise<boolean> {
+export function batchAddChannelToAll(data: Partial<Channel>): Promise<ApiResponse<string[]>> {
     return request({
         url: '/pool/batchAddChannelToAll',
         method: 'post',

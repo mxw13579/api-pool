@@ -39,6 +39,10 @@
         #{createdAt}, #{updatedAt}, #{createdBy}, #{updatedBy}, #{deletedBy})
     </insert>
 
+    <select id="selectByUsername" resultMap="AccountEntityMap">
+        select * from account where username = #{username}
+    </select>
+
     <update id="update" parameterType="com.fufu.apipool.entity.AccountEntity">
         UPDATE account
         SET name=#{name}, username=#{username}, password=#{password}, email=#{email}, phone=#{phone},
@@ -54,4 +58,8 @@
         SET deleted_at=#{deletedAt}, deleted_by=#{deletedBy}
         WHERE id=#{id} AND deleted_at IS NULL
     </update>
+
+    <select id="count" resultType="long">
+        SELECT count(*) FROM account
+    </select>
 </mapper>

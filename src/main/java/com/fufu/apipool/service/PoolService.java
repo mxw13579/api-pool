@@ -100,5 +100,5 @@ public interface PoolService {
      * @param dto 渠道信息
      * @return 添加结果
      */
-    Boolean batchAddChannelToAll(ChannelDTO dto);
+    List<String> batchAddChannelToAll(ChannelDTO dto);
 }

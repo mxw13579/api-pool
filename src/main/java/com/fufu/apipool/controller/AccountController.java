@@ -1,14 +1,18 @@
 package com.fufu.apipool.controller;
 
+import cn.dev33.satoken.stp.StpUtil;
 import com.fufu.apipool.common.Result;
 import com.fufu.apipool.common.ResultUtil;
+import com.fufu.apipool.domain.dto.LoginRequest;
 import com.fufu.apipool.entity.AccountEntity;
 import com.fufu.apipool.service.AccountService;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 
 /**
  * 账号控制器
@@ -22,6 +26,33 @@ import java.util.List;
 public class AccountController {
 
     private final AccountService accountService;
+
+    /**
+     * 登录接口
+     * @param loginRequest 包含用户名和密码
+     * @return Result对象，包含JWT token
+     */
+    @PostMapping("/login")
+    public Result<Map<String, String>> login(@RequestBody LoginRequest loginRequest) {
+        try {
+            String token = accountService.login(loginRequest.getUsername(), loginRequest.getPassword());
+            // Sa-Token 默认的 token 名称是 "satoken"，也可以自定义
+            return ResultUtil.getSuccessResult(Collections.singletonMap("token", token));
+        } catch (Exception e) {
+            log.error("登陆失败",e);
+            return ResultUtil.getFailResult("登陆失败","LoingError",e.getMessage());
+        }
+    }
+
+    /**
+     * 退出登录
+     * @return Result对象，包含退出结果
+     */
+    @PostMapping("/logout")
+    public Result<String> logout() {
+        StpUtil.logout();
+        return ResultUtil.getSuccessResult("退出成功");
+    }
 
     /**
      * 查询所有账号

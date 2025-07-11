@@ -9,6 +9,12 @@ interface BaseEntity {
     deletedBy?: string;
 }
 
+export interface ApiResponse<T = any> {
+    code: number;
+    msg: string;
+    data: T;
+}
+
 // 账号实体
 export interface AccountEntity extends BaseEntity {
     name: string;

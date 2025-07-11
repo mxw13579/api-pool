@@ -43,7 +43,7 @@ public class PoolController {
      * @return Result对象，包含操作结果
      */
     @PostMapping("/batchAddChannelToAll")
-    public Result<Boolean> batchAddChannelToAll(@RequestBody ChannelDTO dto) {
+    public Result<List<String>> batchAddChannelToAll(@RequestBody ChannelDTO dto) {
         return ResultUtil.getSuccessResult(poolService.batchAddChannelToAll(dto));
     }
 
