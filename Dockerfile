@@ -54,6 +54,7 @@ COPY --from=backend-builder /app/target/*.jar app.jar
 
 # 声明应用将监听的端口
 EXPOSE 8080
+RUN mkdir -p /app/data && chmod 777 /app/data
 
 # 容器启动时执行的命令
 ENTRYPOINT ["java", "-jar", "app.jar"]
