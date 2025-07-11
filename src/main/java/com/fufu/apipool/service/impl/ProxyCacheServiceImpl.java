@@ -3,6 +3,7 @@ package com.fufu.apipool.service.impl;
 import com.fufu.apipool.entity.ProxyEntity;
 import com.fufu.apipool.service.ProxyCacheService;
 import com.fufu.apipool.service.ProxyService;
+import jakarta.annotation.PostConstruct;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Lazy;
@@ -37,7 +38,7 @@ public class ProxyCacheServiceImpl implements ProxyCacheService {
     private volatile List<ProxyEntity> activeProxyList = new ArrayList<>();
 
 
-    @Override
+    @PostConstruct
     public void init() {
         log.info("初始化代理缓存...");
         refreshCache();

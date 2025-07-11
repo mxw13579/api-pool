@@ -83,7 +83,7 @@ public class DatabaseEntitySynchronizer implements ApplicationRunner {
             }
             initDefaultAdminAccount();
             log.info("准备初始化代理缓存...");
-            proxyCacheService.init();
+//            proxyCacheService.init();
 
         } catch (Exception e) {
             log.error("数据库实体同步失败", e);
