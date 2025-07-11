@@ -3,6 +3,7 @@ package com.fufu.apipool.common.init;
 import com.fufu.apipool.common.BaseEntity;
 import com.fufu.apipool.entity.AccountEntity;
 import com.fufu.apipool.service.AccountService;
+import com.fufu.apipool.service.ProxyCacheService;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -11,6 +12,7 @@ import org.springframework.boot.ApplicationArguments;
 import org.springframework.boot.ApplicationRunner;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.annotation.ClassPathScanningCandidateComponentProvider;
+import org.springframework.core.annotation.Order;
 import org.springframework.core.io.DefaultResourceLoader;
 import org.springframework.core.io.ResourceLoader;
 import org.springframework.core.type.filter.AssignableTypeFilter;
@@ -36,6 +38,7 @@ import java.util.Set;
  * @author lizelin
  */
 @Slf4j
+@Order(1)
 @Component
 public class DatabaseEntitySynchronizer implements ApplicationRunner {
     @Autowired
@@ -46,6 +49,8 @@ public class DatabaseEntitySynchronizer implements ApplicationRunner {
     private String dataSourceUrl;
     @Autowired
     private AccountService accountService;
+    @Autowired
+    private ProxyCacheService proxyCacheService;
 
     @Override
     public void run(ApplicationArguments args) throws Exception {
@@ -77,6 +82,9 @@ public class DatabaseEntitySynchronizer implements ApplicationRunner {
                 }
             }
             initDefaultAdminAccount();
+            log.info("准备初始化代理缓存...");
+            proxyCacheService.init();
+
         } catch (Exception e) {
             log.error("数据库实体同步失败", e);
         }

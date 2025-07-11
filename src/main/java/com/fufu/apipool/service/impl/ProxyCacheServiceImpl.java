@@ -3,7 +3,6 @@ package com.fufu.apipool.service.impl;
 import com.fufu.apipool.entity.ProxyEntity;
 import com.fufu.apipool.service.ProxyCacheService;
 import com.fufu.apipool.service.ProxyService;
-import jakarta.annotation.PostConstruct;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Lazy;
@@ -37,10 +36,8 @@ public class ProxyCacheServiceImpl implements ProxyCacheService {
     private final AtomicInteger roundRobinIndex = new AtomicInteger(0);
     private volatile List<ProxyEntity> activeProxyList = new ArrayList<>();
 
-    /**
-     * Bean初始化时，加载所有代理到缓存
-     */
-    @PostConstruct
+
+    @Override
     public void init() {
         log.info("初始化代理缓存...");
         refreshCache();

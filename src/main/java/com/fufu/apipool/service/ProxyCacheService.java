@@ -9,6 +9,11 @@ import com.fufu.apipool.entity.ProxyEntity;
 public interface ProxyCacheService {
 
     /**
+     * 初始化
+     */
+    void init();
+
+    /**
      * 从缓存中随机获取一个启用的代理
      * @return ProxyEntity 或 null (如果没有可用的代理)
      */
