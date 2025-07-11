@@ -2,6 +2,8 @@ package com.fufu.apipool.controller;
 
 import com.fufu.apipool.common.Result;
 import com.fufu.apipool.common.ResultUtil;
+import com.fufu.apipool.domain.dto.ProxyBatchesEntity;
+import com.fufu.apipool.domain.vo.ProxyVO;
 import com.fufu.apipool.entity.ProxyEntity;
 import com.fufu.apipool.service.ProxyService;
 import lombok.AllArgsConstructor;
@@ -29,8 +31,8 @@ public class ProxyController {
      * @return Result对象，包含代理列表
      */
     @GetMapping("/list")
-    public Result<List<ProxyEntity>> list() {
-        List<ProxyEntity> list = proxyService.selectAll();
+    public Result<List<ProxyVO>> list() {
+        List<ProxyVO> list = proxyService.selectAll();
         return ResultUtil.getSuccessResult(list);
     }
 
@@ -41,8 +43,8 @@ public class ProxyController {
      * @return Result对象，包含代理信息
      */
     @GetMapping("/{id}")
-    public Result<ProxyEntity> getById(@PathVariable Long id) {
-        ProxyEntity entity = proxyService.selectById(id);
+    public Result<ProxyVO> getById(@PathVariable Long id) {
+        ProxyVO entity = proxyService.selectById(id);
         return ResultUtil.getSuccessResult(entity);
     }
 
@@ -57,6 +59,19 @@ public class ProxyController {
         int count = proxyService.insert(proxyEntity);
         return ResultUtil.getSuccessResult(count);
     }
+
+    /**
+     * 批量新增代理
+     *
+     * @param proxyBatches 代理实体
+     * @return Result对象，包含插入行数
+     */
+    @PostMapping("/add-batches")
+    public Result<Integer> addBatches(@RequestBody ProxyBatchesEntity proxyBatches) {
+        int count = proxyService.addBatches(proxyBatches);
+        return ResultUtil.getSuccessResult(count);
+    }
+
 
     /**
      * 更新代理

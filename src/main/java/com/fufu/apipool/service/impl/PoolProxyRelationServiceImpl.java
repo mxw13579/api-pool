@@ -1,12 +1,17 @@
 package com.fufu.apipool.service.impl;
 
+import com.fufu.apipool.domain.dto.ProxyBindCountDTO;
 import com.fufu.apipool.entity.PoolProxyRelationEntity;
 import com.fufu.apipool.mapper.PoolProxyRelationMapper;
 import com.fufu.apipool.service.PoolProxyRelationService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.util.CollectionUtils;
 
+import java.util.Collections;
 import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 /**
  * 号池与代理关联关系服务实现类
@@ -17,36 +22,52 @@ import java.util.List;
 public class PoolProxyRelationServiceImpl implements PoolProxyRelationService {
 
     @Autowired
-    private PoolProxyRelationMapper relationMapper;
+    private PoolProxyRelationMapper poolProxyRelationMapper;
 
     @Override
     public boolean addRelation(PoolProxyRelationEntity relation) {
-        return relationMapper.insert(relation) > 0;
+        return poolProxyRelationMapper.insert(relation) > 0;
     }
 
     @Override
     public List<PoolProxyRelationEntity> getRelationsByPoolId(Long poolId) {
-        return relationMapper.selectByPoolId(poolId);
+        return poolProxyRelationMapper.selectByPoolId(poolId);
     }
 
     @Override
     public List<PoolProxyRelationEntity> getRelationsByProxyId(Long proxyId) {
-        return relationMapper.selectByProxyId(proxyId);
+        return poolProxyRelationMapper.selectByProxyId(proxyId);
     }
 
     @Override
     public boolean deleteRelation(Long id) {
-        return relationMapper.deleteById(id) > 0;
+        return poolProxyRelationMapper.deleteById(id) > 0;
     }
 
     @Override
     public List<PoolProxyRelationEntity> getAllRelations(int pageNum, int pageSize) {
         int offset = (pageNum - 1) * pageSize;
-        return relationMapper.selectAll(offset, pageSize);
+        return poolProxyRelationMapper.selectAll(offset, pageSize);
     }
 
     @Override
     public int getAllRelationsCount() {
-        return relationMapper.countAll();
+        return poolProxyRelationMapper.countAll();
     }
+
+    /**
+     * 批量获取多个代理的绑定数量
+     * @param proxyIds 代理ID列表
+     * @return Map，key为代理ID，value为绑定数量
+     */
+    @Override
+    public Map<Long, Integer> getBindCountsForProxies(List<Long> proxyIds) {
+        if (CollectionUtils.isEmpty(proxyIds)) {
+            return Collections.emptyMap();
+        }
+        List<ProxyBindCountDTO> counts = poolProxyRelationMapper.countByProxyIds(proxyIds);
+        return counts.stream()
+                .collect(Collectors.toMap(ProxyBindCountDTO::getProxyId, ProxyBindCountDTO::getCount));
+    }
+
 }

@@ -1,6 +1,7 @@
 package com.fufu.apipool.service;
 
 import com.fufu.apipool.domain.newapi.Channel;
+import com.fufu.apipool.domain.newapi.ChannelDTO;
 import com.fufu.apipool.entity.PoolEntity;
 
 import java.util.List;
@@ -73,10 +74,10 @@ public interface PoolService {
      * 根据号池ID添加渠道信息
      *
      * @param poolId  号池ID
-     * @param channel
+     * @param dto
      * @return 添加结果
      */
-    Boolean addChannelByPoolId(Long poolId, Channel channel);
+    Boolean addChannelByPoolId(Long poolId, ChannelDTO dto);
 
     /**
      * 根据 号池ID和渠道ID查询渠道信息
@@ -93,4 +94,11 @@ public interface PoolService {
      * @return 删除结果
      */
     Boolean deleteChannelByPoolId(Long poolId, Long channelId);
+
+    /**
+     * 批量添加渠道信息到所有号池
+     * @param dto 渠道信息
+     * @return 添加结果
+     */
+    Boolean batchAddChannelToAll(ChannelDTO dto);
 }

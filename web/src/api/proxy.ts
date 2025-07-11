@@ -24,6 +24,10 @@ export const updateProxy = (data: ProxyEntity) => {
     });
 };
 
+export function addProxyBatches(data: any) {
+    return request.post('/proxy/add-batches', data);
+}
+
 export const deleteProxy = (id: number) => {
     return request({
         url: `/proxy/delete/${id}`,

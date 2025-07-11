@@ -177,9 +177,9 @@ const defaultChannel: Partial<Channel> = {
   models: 'gemini-2.5-flash,gemini-2.5-pro,gemini-2.5-pro-preview-05-06,gemini-2.5-pro-preview-06-05',
   group: 'default',
   priority: 0,
-  weight: 100,
+  weight: 0,
   autoBan: 1, // 默认开启自动封禁
-  modelMapping: '',
+  modelMapping: '{}',
   tag: '',
   setting: "",
   proxy: 1,

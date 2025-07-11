@@ -1,22 +1,21 @@
-package com.fufu.apipool.entity;
+package com.fufu.apipool.domain.dto;
 
-import com.fufu.apipool.common.BaseEntity;
 import lombok.Data;
 
 /**
- * 代理实体
  * @author lizelin
+ * @date 2025-07-10 23:32
  */
 @Data
-public class ProxyEntity extends BaseEntity {
+public class ProxyBatchesEntity {
     /**
      * 代理名称
      */
-    private String name;
+    private String prefixName;
     /**
      * 代理 URL
      */
-    private String proxyUrl;
+    private String proxyUrlBatches;
     /**
      * 代理来源
      */
@@ -29,4 +28,5 @@ public class ProxyEntity extends BaseEntity {
      * 代理状态,启用/禁用
      */
     private Integer status;
+
 }

@@ -3,6 +3,7 @@ package com.fufu.apipool.controller;
 import com.fufu.apipool.common.Result;
 import com.fufu.apipool.common.ResultUtil;
 import com.fufu.apipool.domain.newapi.Channel;
+import com.fufu.apipool.domain.newapi.ChannelDTO;
 import com.fufu.apipool.entity.PoolEntity;
 import com.fufu.apipool.service.PoolService;
 import lombok.AllArgsConstructor;
@@ -34,6 +35,18 @@ public class PoolController {
         return ResultUtil.getSuccessResult( poolService.getChannelsByPoolId(poolId));
     }
 
+
+    /**
+     * 批量为所有号池新增渠道
+     *
+     * @param dto 渠道信息
+     * @return Result对象，包含操作结果
+     */
+    @PostMapping("/batchAddChannelToAll")
+    public Result<Boolean> batchAddChannelToAll(@RequestBody ChannelDTO dto) {
+        return ResultUtil.getSuccessResult(poolService.batchAddChannelToAll(dto));
+    }
+
     /**
      * 根据号池ID和渠道ID查询渠道信息
      * @param poolId 号池ID
@@ -48,12 +61,12 @@ public class PoolController {
     /**
      * 根据号池ID添加渠道
      * @param poolId 号池ID
-     * @param channel 渠道信息
+     * @param dto 渠道信息
      * @return Result对象，包含添加结果
      */
     @PostMapping("/addChannelsByPoolId/{poolId}")
-    public Result<Boolean> addChannelByPoolId(@PathVariable("poolId") Long poolId,@RequestBody Channel channel) {
-        return ResultUtil.getSuccessResult(poolService.addChannelByPoolId(poolId,channel));
+    public Result<Boolean> addChannelByPoolId(@PathVariable("poolId") Long poolId,@RequestBody ChannelDTO dto) {
+        return ResultUtil.getSuccessResult(poolService.addChannelByPoolId(poolId,dto));
     }
 
     /**

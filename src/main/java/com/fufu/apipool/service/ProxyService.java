@@ -1,5 +1,7 @@
 package com.fufu.apipool.service;
 
+import com.fufu.apipool.domain.dto.ProxyBatchesEntity;
+import com.fufu.apipool.domain.vo.ProxyVO;
 import com.fufu.apipool.entity.ProxyEntity;
 
 import java.util.List;
@@ -16,13 +18,13 @@ public interface ProxyService {
      * @param id 代理ID
      * @return 代理实体
      */
-    ProxyEntity selectById(Long id);
+    ProxyVO selectById(Long id);
 
     /**
      * 查询所有代理
      * @return 代理列表
      */
-    List<ProxyEntity> selectAll();
+    List<ProxyVO > selectAll();
 
     /**
      * 新增代理
@@ -44,4 +46,17 @@ public interface ProxyService {
      * @return 删除行数
      */
     int deleteById(Long id);
+
+    /**
+     * 新增：查询所有代理实体
+     * @return List<ProxyEntity> 代理实体列表
+     */
+    List<ProxyEntity> selectAllEntities();
+
+    /**
+     * 新增：批量添加代理
+     * @param proxyBatches 代理批次实体
+     * @return 添加行数
+     */
+    int addBatches(ProxyBatchesEntity proxyBatches);
 }

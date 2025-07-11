@@ -1,12 +1,14 @@
 <template>
   <div>
     <el-button type="primary" @click="handleAdd" :icon="Plus">新增代理</el-button>
+    <el-button type="success" @click="handleBatchAdd" :icon="Plus" style="margin-left: 10px;">批量添加</el-button>
     <el-table :data="proxies" v-loading="loading" border stripe style="width: 100%; margin-top: 20px;">
       <el-table-column prop="id" label="ID" width="80" />
       <el-table-column prop="name" label="名称" />
       <el-table-column prop="proxyUrl" label="代理URL" />
       <el-table-column prop="source" label="来源" />
       <el-table-column prop="address" label="地址" />
+      <el-table-column prop="bindCount" label="绑定号池数" width="120" />
       <el-table-column prop="status" label="状态">
         <template #default="{ row }">
           <el-tag :type="row.status === 1 ? 'success' : 'danger'">
@@ -47,6 +49,35 @@
       </template>
     </el-dialog>
   </div>
+  <el-dialog v-model="batchDialogVisible" title="批量添加代理" width="600px">
+    <el-form :model="batchForm" ref="batchFormRef" label-width="120px">
+      <el-form-item label="名称前缀" prop="prefixName" required>
+        <el-input v-model="batchForm.prefixName" placeholder="如 proxy" />
+      </el-form-item>
+      <el-form-item label="代理URL批量" prop="proxyUrlBatches" required>
+        <el-input
+            v-model="batchForm.proxyUrlBatches"
+            type="textarea"
+            :rows="8"
+            placeholder="每行一个代理URL"
+        />
+      </el-form-item>
+      <el-form-item label="来源" prop="source">
+        <el-input v-model="batchForm.source" />
+      </el-form-item>
+      <el-form-item label="地址" prop="address">
+        <el-input v-model="batchForm.address" />
+      </el-form-item>
+      <el-form-item label="状态" prop="status" required>
+        <el-switch v-model="batchForm.status" :active-value="1" :inactive-value="0" />
+      </el-form-item>
+    </el-form>
+    <template #footer>
+      <el-button @click="batchDialogVisible = false">取消</el-button>
+      <el-button type="primary" @click="handleBatchSubmit">确定</el-button>
+    </template>
+  </el-dialog>
+
 </template>
 
 <script setup lang="ts">
@@ -55,6 +86,8 @@ import { getProxyList, addProxy, updateProxy, deleteProxy } from '@/api/proxy';
 import type { ProxyEntity } from '@/types';
 import { ElMessage, ElMessageBox } from 'element-plus';
 import { Plus } from '@element-plus/icons-vue'
+import { addProxyBatches } from '@/api/proxy';
+
 
 const proxies = ref<ProxyEntity[]>([]);
 const loading = ref(false);
@@ -100,5 +133,36 @@ const handleDelete = (id: number) => {
     ElMessage.success('删除成功');
     fetchProxies();
   });
+};
+
+const batchDialogVisible = ref(false);
+const batchForm = ref({
+  prefixName: '',
+  proxyUrlBatches: '',
+  source: '',
+  address: '',
+  status: 1,
+});
+
+const handleBatchAdd = () => {
+  batchForm.value = {
+    prefixName: '',
+    proxyUrlBatches: '',
+    source: '',
+    address: '',
+    status: 1,
+  };
+  batchDialogVisible.value = true;
+};
+
+const handleBatchSubmit = async () => {
+  if (!batchForm.value.prefixName || !batchForm.value.proxyUrlBatches) {
+    ElMessage.warning('请填写名称前缀和代理URL批量');
+    return;
+  }
+  const count = await addProxyBatches(batchForm.value);
+  ElMessage.success(`批量添加成功，成功数量：${count}`);
+  batchDialogVisible.value = false;
+  fetchProxies();
 };
 </script>

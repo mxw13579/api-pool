@@ -3,6 +3,7 @@ package com.fufu.apipool.service;
 import com.fufu.apipool.entity.PoolProxyRelationEntity;
 
 import java.util.List;
+import java.util.Map;
 
 /**
  * 号池与代理关联关系服务接口
@@ -51,4 +52,11 @@ public interface PoolProxyRelationService {
      * @return 总数
      */
     int getAllRelationsCount();
+
+    /**
+     * 批量获取多个代理的绑定数量
+     * @param proxyIds 代理ID列表
+     * @return Map，key为代理ID，value为绑定数量
+     */
+    Map<Long, Integer> getBindCountsForProxies(List<Long> proxyIds);
 }

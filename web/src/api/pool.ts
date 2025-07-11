@@ -1,6 +1,19 @@
 import request from './index';
 import type { PoolEntity, Channel } from '@/types';
 
+/**
+ * 批量为所有号池新增一个渠道
+ * @param data 渠道信息对象，类型为 ChannelDTO 在后端对应，前端可以用 Partial<Channel>
+ * @returns Promise<boolean>
+ */
+export function batchAddChannelToAll(data: Partial<Channel>): Promise<boolean> {
+    return request({
+        url: '/pool/batchAddChannelToAll',
+        method: 'post',
+        data
+    });
+}
+
 // 获取号池列表
 export const getPoolList = (): Promise<PoolEntity[]> => {
     return request({

@@ -56,4 +56,21 @@
         SET deleted_at = #{deletedAt}, deleted_by = #{deletedBy}
         WHERE id = #{id}
     </update>
+
+    <select id="countByProxyIds" resultType="com.fufu.apipool.domain.dto.ProxyBindCountDTO">
+        SELECT
+        proxy_id as proxyId,
+        COUNT(*) as count
+        FROM
+        pool_proxy_relation
+        WHERE
+        deleted_at IS NULL
+        AND
+        proxy_id IN
+        <foreach item="item" collection="proxyIds" open="(" separator="," close=")">
+            #{item}
+        </foreach>
+        GROUP BY
+        proxy_id
+    </select>
 </mapper>

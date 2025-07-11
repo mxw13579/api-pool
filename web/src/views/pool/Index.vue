@@ -1,6 +1,9 @@
 <template>
   <div>
     <el-button type="primary" @click="handleAdd" :icon="Plus">新增号池</el-button>
+    <!-- [新增] 添加“批量全号池新增渠道”按钮 -->
+    <el-button type="success" @click="handleBatchAddChannel" :icon="Ticket">批量全号池新增渠道</el-button>
+
     <el-table :data="pools" v-loading="loading" border stripe style="width: 100%; margin-top: 20px;">
       <el-table-column prop="id" label="ID" width="80" />
       <el-table-column prop="name" label="名称" />
@@ -15,7 +18,7 @@
       </el-table-column>
     </el-table>
 
-    <!-- Form Dialog -->
+    <!-- 原有的新增/编辑号池弹窗 -->
     <el-dialog v-model="dialogVisible" :title="dialogTitle" width="500px">
       <el-form :model="form" ref="formRef" label-width="120px">
         <el-form-item label="名称" prop="name" required>
@@ -43,18 +46,90 @@
       </template>
     </el-dialog>
 
-    <!-- Channel Detail Dialog -->
+    <!-- 原有的渠道详情弹窗 -->
     <ChannelDetailDialog v-model:visible="channelDialogVisible" :poolId="currentPoolId" />
+
+    <!-- [新增] 批量新增渠道的弹窗 -->
+    <el-dialog
+        v-model="batchAddDialogVisible"
+        title="批量全号池新增渠道"
+        width="60%"
+        :close-on-click-modal="false"
+    >
+      <el-form
+          v-if="batchChannelForm"
+          :model="batchChannelForm"
+          label-width="120px"
+      >
+        <el-form-item label="名称" required>
+          <el-input v-model="batchChannelForm.name" placeholder="请输入渠道名称" />
+        </el-form-item>
+        <<el-form-item label="类型">
+        <el-select v-model="batchChannelForm.type" placeholder="请选择类型">
+          <el-option v-for="(name, code) in channelTypeMap" :key="code" :label="name" :value="Number(code)" />
+        </el-select>
+      </el-form-item>
+        <el-form-item label="分组">
+          <el-input v-model="batchChannelForm.group" placeholder="请输入分组名称, e.g. default" />
+        </el-form-item>
+        <el-form-item label="密钥" required>
+          <el-input v-model="batchChannelForm.key" type="textarea" :rows="8" show-password placeholder="请输入渠道密钥" />
+        </el-form-item>
+        <el-form-item label="基础URL">
+          <el-input v-model="batchChannelForm.baseUrl" placeholder="e.g. https://api.openai.com" />
+        </el-form-item>
+        <el-form-item label="支持的模型">
+          <el-input v-model="batchChannelForm.models" placeholder="逗号分隔, e.g. gpt-3.5-turbo,gpt-4" />
+        </el-form-item>
+        <el-form-item label="优先级">
+          <el-input-number v-model="batchChannelForm.priority" :min="0" />
+        </el-form-item>
+        <el-form-item label="权重">
+          <el-input-number v-model="batchChannelForm.weight" :min="0" />
+        </el-form-item>
+        <el-form-item label="自动封禁">
+          <el-switch v-model="batchChannelForm.autoBan" :active-value="1" :inactive-value="0" />
+        </el-form-item>
+        <el-form-item label="标签">
+          <el-input v-model="batchChannelForm.tag" placeholder="请输入渠道标签" />
+        </el-form-item>
+        <el-form-item label="设置信息">
+          <el-input v-model="batchChannelForm.setting" type="textarea" :rows="3" placeholder="JSON格式的设置信息" />
+        </el-form-item>
+        <el-form-item label="参数覆盖">
+          <el-input v-model="batchChannelForm.paramOverride" type="textarea" :rows="3" placeholder="JSON格式的参数覆盖信息" />
+        </el-form-item>
+        <el-form-item label="部署地区">
+          <el-input v-model="batchChannelForm.other" type="textarea" :rows="3" placeholder="部署地区" />
+        </el-form-item>
+        <el-form-item label="代理设置">
+          <el-select v-model="batchChannelForm.proxy" placeholder="请选择类型">
+            <el-option v-for="(name, code) in proxyTypeMap" :key="code" :label="name" :value="Number(code)" />
+          </el-select>
+        </el-form-item>
+        <el-form-item label="其他附加信息">
+          <el-input v-model="batchChannelForm.otherInfo" type="textarea" :rows="2" placeholder="其他附加信息" />
+        </el-form-item>
+      </el-form>
+      <template #footer>
+        <span class="dialog-footer">
+          <el-button @click="batchAddDialogVisible = false">取消</el-button>
+          <el-button type="primary" @click="handleBatchSubmit">确定</el-button>
+        </span>
+      </template>
+    </el-dialog>
   </div>
 </template>
 
 <script setup lang="ts">
 import { ref, onMounted } from 'vue';
-import { getPoolList, addPool, updatePool, deletePool } from '@/api/pool';
-import type { PoolEntity } from '@/types';
+// [修改] 引入新的API函数和图标
+import { getPoolList, addPool, updatePool, deletePool, batchAddChannelToAll } from '@/api/pool';
+import type { PoolEntity, Channel } from '@/types'; // 假设 Channel 类型在 types.ts 中
 import { ElMessage, ElMessageBox } from 'element-plus';
-import { Plus } from '@element-plus/icons-vue'
+import { Plus, Ticket } from '@element-plus/icons-vue'; // 引入 Ticket 图标
 import ChannelDetailDialog from '@/components/ChannelDetailDialog.vue';
+import {channelTypeMap, proxyTypeMap} from "@/utils/maps.ts";
 
 const pools = ref<PoolEntity[]>([]);
 const loading = ref(false);
@@ -65,6 +140,53 @@ const formRef = ref();
 
 const channelDialogVisible = ref(false);
 const currentPoolId = ref<number | null>(null);
+
+// [新增] 批量新增渠道功能相关的状态和逻辑
+const batchAddDialogVisible = ref(false);
+const batchChannelForm = ref<Partial<Channel>>({});
+
+// 参考 ChannelDetailDialog 的默认渠道对象
+const defaultChannel: Partial<Channel> = {
+  name: '',
+  type: 41, // 默认类型，例如 OpenAI
+  status: 2, // 默认禁用
+  key: '',
+  baseUrl: '',
+  models: 'gemini-2.5-flash,gemini-2.5-pro,gemini-2.5-pro-preview-05-06,gemini-2.5-pro-preview-06-05',
+  group: 'default',
+  priority: 0,
+  weight: 0,
+  autoBan: 1, // 默认开启自动封禁
+  modelMapping: '{}',
+  tag: '',
+  setting: "",
+  proxy: 1,
+  paramOverride: '',
+  other: '{\n"default\": \"global\"\n}',
+  otherInfo: '',
+};
+
+const handleBatchAddChannel = () => {
+  batchChannelForm.value = { ...defaultChannel };
+  batchAddDialogVisible.value = true;
+};
+
+const handleBatchSubmit = async () => {
+  if (!batchChannelForm.value.name || !batchChannelForm.value.key) {
+    ElMessage.error('渠道名称和密钥为必填项');
+    return;
+  }
+  try {
+    // 调用新的后端接口
+    await batchAddChannelToAll(batchChannelForm.value);
+    ElMessage.success('批量新增渠道任务已提交');
+    batchAddDialogVisible.value = false;
+  } catch (error) {
+    ElMessage.error('批量新增渠道失败');
+    console.error(error);
+  }
+};
+// [新增结束]
 
 const fetchPools = async () => {
   loading.value = true;

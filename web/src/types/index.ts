@@ -40,6 +40,8 @@ export interface ProxyEntity extends BaseEntity {
     source: string;
     address: string;
     status: number;
+    bindCount?: number;
+
 }
 
 export interface Channel {

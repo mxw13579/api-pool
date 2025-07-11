@@ -17,6 +17,8 @@ public interface ProxyMapper {
 
     int insert(ProxyEntity proxyEntity);
 
+    long getLastInsertId();
+
     int update(ProxyEntity proxyEntity);
 
     int deleteById(Long id);

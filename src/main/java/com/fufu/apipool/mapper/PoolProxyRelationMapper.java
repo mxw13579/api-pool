@@ -1,5 +1,6 @@
 package com.fufu.apipool.mapper;
 
+import com.fufu.apipool.domain.dto.ProxyBindCountDTO;
 import com.fufu.apipool.entity.PoolProxyRelationEntity;
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
@@ -53,4 +54,11 @@ public interface PoolProxyRelationMapper {
      * @return 总数
      */
     int countAll();
+
+    /**
+     * [新增] 根据一批代理ID，批量查询每个代理的绑定数量
+     * @param proxyIds 代理ID列表
+     * @return 包含代理ID和绑定数量的列表
+     */
+    List<ProxyBindCountDTO> countByProxyIds(@Param("proxyIds") List<Long> proxyIds);
 }
