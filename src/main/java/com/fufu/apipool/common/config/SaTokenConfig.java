@@ -23,7 +23,21 @@ public class SaTokenConfig implements WebMvcConfigurer {
                     StpUtil.checkLogin();
                 })).addPathPatterns("/**")
                 // 排除登录接口
-                .excludePathPatterns("/api/account/login");
+                .excludePathPatterns("/api/account/login",
+                        "/favicon.ico",
+                        "/index.html",
+                        "/static/**",
+                        "/public/**",
+                        "/resources/**",
+                        "/webjars/**",
+                        "/**/*.js",
+                        "/**/*.css",
+                        "/**/*.html",
+                        "/**/*.png",
+                        "/**/*.jpg",
+                        "/**/*.jpeg",
+                        "/**/*.gif",
+                        "/**/*.svg");
     }
 
     @Override
