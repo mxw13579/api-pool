@@ -8,6 +8,7 @@ import com.alibaba.fastjson2.JSONReader;
 import com.alibaba.fastjson2.TypeReference;
 import com.fufu.apipool.common.ApiHttpUtil;
 import com.fufu.apipool.common.constant.ApiUrlEnum;
+import com.fufu.apipool.common.constant.ChannelStatus;
 import com.fufu.apipool.domain.newapi.Channel;
 import com.fufu.apipool.domain.newapi.ChannelDTO;
 import com.fufu.apipool.domain.newapi.ChannelPageData;
@@ -27,10 +28,21 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantLock;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 
 /**
  * 号池服务实现类
@@ -49,6 +61,11 @@ public class PoolServiceImpl implements PoolService {
     private final ProxyCacheService proxyCacheService;
     private final PoolProxyRelationService poolProxyRelationService;
 
+    private final ExecutorService monitoringExecutor;
+    private final ConcurrentHashMap<Long, Lock> poolLocks = new ConcurrentHashMap<>();
+
+    private static final Pattern FAILED_PATTERN = Pattern.compile("^(.*) -监控失败- (\\d+)次$");
+    private static final Pattern RECOVERED_PATTERN = Pattern.compile("^(.*) -重试\\d+次后恢复$");
 
     /**
      * 根据ID查询号池
@@ -106,7 +123,12 @@ public class PoolServiceImpl implements PoolService {
      */
     @Override
     public List<Channel> getChannelsByPoolId(Long poolId) {
-        String send = apiHttpUtil.send(poolId, ApiUrlEnum.LIST, null, null, null);
+        //?p=1&page_size=50&id_sort=true&tag_mode=false
+        Map<String, Object> pathVars = new HashMap<>();
+        pathVars.put("p", 1);
+        pathVars.put("page_size", 99999);
+        pathVars.put("id_sort", false);
+        String send = apiHttpUtil.send(poolId, ApiUrlEnum.LIST, null, pathVars, null);
         R<ChannelPageData<Channel>> r = JSON.parseObject(
                 send,
                 new TypeReference<R<ChannelPageData<Channel>>>() {},
@@ -332,6 +354,167 @@ public class PoolServiceImpl implements PoolService {
             }
         }
         return ret;
+    }
+
+    private record NameParseResult(String originalName, int retries) {}
+
+    private NameParseResult parseChannelName(String name) {
+        if (name == null) {
+            return new NameParseResult("", 0);
+        }
+        Matcher failedMatcher = FAILED_PATTERN.matcher(name);
+        if (failedMatcher.matches()) {
+            return new NameParseResult(failedMatcher.group(1).trim(), Integer.parseInt(failedMatcher.group(2)));
+        }
+
+        Matcher recoveredMatcher = RECOVERED_PATTERN.matcher(name);
+        if (recoveredMatcher.matches()) {
+            return new NameParseResult(recoveredMatcher.group(1).trim(), 0);
+        }
+
+        return new NameParseResult(name, 0);
+    }
+
+    private void safeUpdateChannel(Long poolId, Channel channel) {
+        try {
+            updateChannelByPoolId(poolId, channel);
+        } catch (Exception e) {
+            // BUG FIX 3: 捕获更新失败的异常，防止中断监控流程
+            log.error("CRITICAL: 更新号池[ID:{}]的渠道[{}({})]状态失败！数据库与内存状态可能不一致。",
+                    poolId, channel.getName(), channel.getId(), e);
+        }
+    }
+
+    @Override
+    public void monitorPool(Long poolId) {
+        Lock lock = poolLocks.computeIfAbsent(poolId, k -> new ReentrantLock());
+        if (!lock.tryLock()) {
+            log.warn("号池[ID:{}] 的监控任务已在运行，本次调度跳过。", poolId);
+            return;
+        }
+        try {
+            doMonitorPool(poolId);
+        } finally {
+            lock.unlock();
+        }
+    }
+
+    private void doMonitorPool(Long poolId) {
+        PoolEntity pool = poolMapper.selectById(poolId);
+        if (pool == null) {
+            log.error("监控任务失败：找不到ID为 {} 的号池。", poolId);
+            return;
+        }
+
+        List<Channel> allChannels = getChannelsByPoolId(poolId);
+        int maxRetries = pool.getMaxMonitorRetries() == null ? 5 : pool.getMaxMonitorRetries();
+
+        List<Channel> activeChannels = new ArrayList<>();
+        List<Channel> retryableFailedChannels = new ArrayList<>();
+        List<Channel> pristineInactiveChannels = new ArrayList<>();
+
+        allChannels = allChannels.stream().sorted(Comparator.comparingInt(Channel::getUsedQuota).reversed()).toList();
+
+        for (Channel channel : allChannels) {
+            if (channel.getStatus() == ChannelStatus.ENABLED) {
+                activeChannels.add(channel);
+            } else {
+                NameParseResult result = parseChannelName(channel.getName());
+                if (result.retries() > 0 && result.retries() < maxRetries) {
+                    retryableFailedChannels.add(channel);
+                } else if (result.retries() == 0) {
+                    pristineInactiveChannels.add(channel);
+                }
+            }
+        }
+
+        retryableFailedChannels = retryableFailedChannels.stream().sorted(Comparator.comparingInt(Channel::getUsedQuota).reversed()).toList();
+        pristineInactiveChannels = pristineInactiveChannels.stream().sorted(Comparator.comparingInt(Channel::getUsedQuota).reversed()).toList();
+
+
+        log.info("号池[{}]: 监控开始. 激活: {}, 待重试: {}, 闲置: {}.",
+                pool.getName(), activeChannels.size(), retryableFailedChannels.size(), pristineInactiveChannels.size());
+
+        List<CompletableFuture<Void>> tasks = new ArrayList<>();
+        AtomicInteger failureCount = new AtomicInteger(0);
+
+        // 检测激活渠道
+        for (Channel channel : activeChannels) {
+            tasks.add(CompletableFuture.runAsync(() -> {
+                try {
+                    testChannelByPoolId(pool.getId(), channel.getId());
+                    log.info("号池[{}]: 检测到激活渠道[{}({})]正常,当前使用额度{}。", pool.getName(), channel.getName(), channel.getId(), (channel.getUsedQuota() / 500000));
+                } catch (Exception e) {
+                    failureCount.incrementAndGet();
+                    NameParseResult result = parseChannelName(channel.getName());
+                    channel.setName(result.originalName() + " -监控失败- " + (result.retries() + 1) + "次");
+                    channel.setStatus(ChannelStatus.MANUALLY_DISABLED);
+                    safeUpdateChannel(pool.getId(), channel);
+                }
+            }, monitoringExecutor));
+        }
+
+        // 检测待重试渠道
+        for (Channel channel : retryableFailedChannels) {
+            tasks.add(CompletableFuture.runAsync(() -> {
+                try {
+                    testChannelByPoolId(pool.getId(), channel.getId());
+                    NameParseResult result = parseChannelName(channel.getName());
+                    channel.setName(result.originalName() + " -重试" + result.retries() + "次后恢复");
+                    channel.setStatus(ChannelStatus.ENABLED);
+                    safeUpdateChannel(pool.getId(), channel);
+                } catch (Exception e) {
+                    NameParseResult result = parseChannelName(channel.getName());
+                    channel.setName(result.originalName() + " -监控失败- " + (result.retries() + 1) + "次");
+                    safeUpdateChannel(pool.getId(), channel);
+                }
+            }, monitoringExecutor));
+        }
+
+        CompletableFuture.allOf(tasks.toArray(new CompletableFuture[0])).join();
+
+        // 重新获取最新状态来计算激活数量
+        List<Channel> updatedChannels = getChannelsByPoolId(poolId);
+        long currentActiveCount = updatedChannels.stream()
+                .filter(c -> c.getStatus() == ChannelStatus.ENABLED)
+                .count();
+        int minActive = pool.getMinActiveChannels() == null ? 1 : pool.getMinActiveChannels();
+        int needed = minActive - (int) currentActiveCount;
+
+        if (needed > 0 && !pristineInactiveChannels.isEmpty()) {
+            log.info("号池[{}]: 当前激活 {} < 最小要求 {}, 需激活 {}个。开始检测闲置渠道...",
+                    pool.getName(), currentActiveCount, minActive, needed);
+
+            ConcurrentLinkedQueue<Channel> successfulInactiveChannels = new ConcurrentLinkedQueue<>();
+            List<CompletableFuture<Void>> activationTestTasks = new ArrayList<>();
+
+            for(Channel channel : pristineInactiveChannels) {
+                activationTestTasks.add(CompletableFuture.runAsync(() -> {
+                    try {
+                        testChannelByPoolId(pool.getId(), channel.getId());
+                        successfulInactiveChannels.add(channel);
+                    } catch(Exception e) {
+                        NameParseResult result = parseChannelName(channel.getName());
+                        channel.setName(result.originalName() + " -监控失败- 1次");
+                        // 你可以根据业务需要设置状态
+                        channel.setStatus(ChannelStatus.MANUALLY_DISABLED);
+                        safeUpdateChannel(pool.getId(), channel);
+                    }
+                }, monitoringExecutor));
+            }
+            CompletableFuture.allOf(activationTestTasks.toArray(new CompletableFuture[0])).join();
+            List<Channel> sortedSuccessChannels = successfulInactiveChannels.stream()
+                    .sorted(Comparator.comparing(Channel::getId))
+                    .toList();
+            if (!successfulInactiveChannels.isEmpty()) {
+                sortedSuccessChannels.stream().limit(needed).forEach(channelToActivate -> {
+                    channelToActivate.setStatus(ChannelStatus.ENABLED);
+                    safeUpdateChannel(pool.getId(), channelToActivate);
+                    log.info("号池[{}]: 已成功激活渠道 [{}({}),当前使用额度{}]。", pool.getName(), channelToActivate.getName(), channelToActivate.getId(), (channelToActivate.getUsedQuota() / 500000));
+                });
+            }
+        }
+        log.info("号池[{}]: 监控任务执行完毕。", pool.getName());
     }
 
 }

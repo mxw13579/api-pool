@@ -36,7 +36,9 @@ export interface PoolEntity extends BaseEntity {
     username: string;
     password?: string;
     address: string;
-    monitoringIntervalTime: string;
+    monitoringIntervalTime: number;
+    minActiveChannels: number;
+    maxMonitorRetries: number;
 }
 
 // 代理实体

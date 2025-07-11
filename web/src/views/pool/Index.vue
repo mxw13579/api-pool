@@ -9,6 +9,9 @@
       <el-table-column prop="name" label="名称" />
       <el-table-column prop="endpoint" label="Endpoint" />
       <el-table-column prop="address" label="地址" />
+      <el-table-column prop="monitoringIntervalTime" label="监控间隔(分)" width="120" />
+      <el-table-column prop="minActiveChannels" label="最小激活数" width="110" />
+      <el-table-column prop="maxMonitorRetries" label="最大重试" width="100" />
       <el-table-column label="操作" width="280">
         <template #default="{ row }">
           <el-button size="small" @click="handleViewChannels(row)">查看渠道</el-button>
@@ -18,7 +21,7 @@
       </el-table-column>
     </el-table>
 
-    <!-- 原有的新增/编辑号池弹窗 -->
+
     <el-dialog v-model="dialogVisible" :title="dialogTitle" width="500px">
       <el-form :model="form" ref="formRef" label-width="120px">
         <el-form-item label="名称" prop="name" required>
@@ -36,8 +39,14 @@
         <el-form-item label="地址" prop="address">
           <el-input v-model="form.address" />
         </el-form-item>
-        <el-form-item label="监控间隔" prop="monitoringIntervalTime">
-          <el-input v-model="form.monitoringIntervalTime" />
+        <el-form-item label="监控间隔(分)" prop="monitoringIntervalTime">
+          <el-input-number v-model="form.monitoringIntervalTime" :min="1" placeholder="例如: 5" />
+        </el-form-item>
+        <el-form-item label="最小激活数" prop="minActiveChannels">
+          <el-input-number v-model="form.minActiveChannels" :min="1" placeholder="例如: 1" />
+        </el-form-item>
+        <el-form-item label="最大监控重试" prop="maxMonitorRetries">
+          <el-input-number v-model="form.maxMonitorRetries" :min="0" placeholder="例如: 5" />
         </el-form-item>
       </el-form>
       <template #footer>
@@ -174,11 +183,10 @@ const failCount = computed(() =>
     batchResultList.value.filter(msg => msg.includes('失败') || msg.includes('异常')).length
 );
 
-// [新增] 批量新增渠道功能相关的状态和逻辑
 const batchAddDialogVisible = ref(false);
 const batchChannelForm = ref<Partial<Channel>>({});
 
-// 参考 ChannelDetailDialog 的默认渠道对象
+
 const defaultChannel: Partial<Channel> = {
   name: '',
   type: 41, // 默认类型，例如 OpenAI
@@ -197,6 +205,17 @@ const defaultChannel: Partial<Channel> = {
   paramOverride: '',
   other: '{\n"default\": \"global\"\n}',
   otherInfo: '',
+};
+
+const defaultPool: Partial<PoolEntity> = {
+  name: '',
+  endpoint: '',
+  username: '',
+  password: '',
+  address: '',
+  monitoringIntervalTime: 5,  // 默认5分钟
+  minActiveChannels: 1,       // 默认最少1个
+  maxMonitorRetries: 5,       // 默认最多重试5次
 };
 
 const handleBatchAddChannel = () => {
@@ -246,7 +265,7 @@ const fetchPools = async () => {
 onMounted(fetchPools);
 
 const handleAdd = () => {
-  form.value = {};
+  form.value = { ...defaultPool };
   dialogTitle.value = '新增号池';
   dialogVisible.value = true;
 };

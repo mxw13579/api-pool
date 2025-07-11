@@ -101,4 +101,10 @@ public interface PoolService {
      * @return 添加结果
      */
     List<String> batchAddChannelToAll(ChannelDTO dto);
+
+    /**
+     * 执行对指定号池的全面监控
+     * @param poolId 号池ID
+     */
+    void monitorPool(Long poolId);
 }

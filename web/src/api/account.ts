@@ -1,32 +1,18 @@
 import request from './index';
 import type { AccountEntity } from '@/types';
 
-export const getAccountList = () => {
-    return request({
-        url: '/account/list',
-        method: 'get',
-    }) as Promise<AccountEntity[]>;
+export const getAccountList = (): Promise<AccountEntity[]> => {
+    return request.get('/account/list').then(res => res.data);
 };
 
-export const addAccount = (data: Omit<AccountEntity, 'id'>) => {
-    return request({
-        url: '/account/add',
-        method: 'post',
-        data,
-    });
+export const addAccount = (data: Omit<AccountEntity, 'id'>): Promise<any> => {
+    return request.post('/account/add', data);
 };
 
-export const updateAccount = (data: AccountEntity) => {
-    return request({
-        url: '/account/update',
-        method: 'put',
-        data,
-    });
+export const updateAccount = (data: AccountEntity): Promise<any> => {
+    return request.put('/account/update', data);
 };
 
-export const deleteAccount = (id: number) => {
-    return request({
-        url: `/account/delete/${id}`,
-        method: 'delete',
-    });
+export const deleteAccount = (id: number): Promise<any> => {
+    return request.delete(`/account/delete/${id}`);
 };

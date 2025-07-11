@@ -30,7 +30,16 @@ public class PoolEntity extends BaseEntity {
      */
     private String address;
     /**
-     * 监控间隔时间
+     * 监控间隔时间/分钟级别
      */
-    private String monitoringIntervalTime;
+    private Integer  monitoringIntervalTime;
+    /**
+     * 最小激活渠道数
+     */
+    private Integer minActiveChannels;
+
+    /**
+     * 最大监控重试次数
+     */
+    private Integer maxMonitorRetries;
 }

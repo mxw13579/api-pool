@@ -1,105 +1,57 @@
 import request from './index';
-import {PoolEntity, Channel, ApiResponse} from '@/types';
+import type {PoolEntity, Channel} from '@/types';
 
-/**
- * 批量为所有号池新增一个渠道
- * @param data 渠道信息对象，类型为 ChannelDTO 在后端对应，前端可以用 Partial<Channel>
- * @returns ApiResponse<string[]>
- */
-export function batchAddChannelToAll(data: Partial<Channel>): Promise<ApiResponse<string[]>> {
-    return request({
-        url: '/pool/batchAddChannelToAll',
-        method: 'post',
-        data
-    });
-}
+/** 批量为所有号池新增一个渠道 */
+export const batchAddChannelToAll = (data: Partial<Channel>): Promise<string[]> => {
+    return request.post('/pool/batchAddChannelToAll', data).then(res => res.data);
+};
 
-// 获取号池列表
+/** 获取号池列表 */
 export const getPoolList = (): Promise<PoolEntity[]> => {
-    return request({
-        url: '/pool/list',
-        method: 'get',
-    });
+    return request.get('/pool/list').then(res => res.data);
 };
 
-// 新增号池
+/** 新增号池 */
 export const addPool = (data: Omit<PoolEntity, 'id'>): Promise<any> => {
-    return request({
-        url: '/pool/add',
-        method: 'post',
-        data,
-    });
+    return request.post('/pool/add', data);
 };
 
-// 更新号池
-export const updatePool = (data: PoolEntity): Promise<any> => {
-    return request({
-        url: '/pool/update',
-        method: 'put',
-        data,
-    });
+/** 更新号池 */
+export const updatePool = (data: Partial<PoolEntity>): Promise<any> => {
+    return request.put('/pool/update', data);
 };
 
-// 删除号池
+/** 删除号池 */
 export const deletePool = (id: number): Promise<any> => {
-    return request({
-        url: `/pool/delete/${id}`,
-        method: 'delete',
-    });
+    return request.delete(`/pool/delete/${id}`);
 };
 
-// 获取渠道列表
+/** 根据号池ID获取渠道列表 */
 export const getChannelsByPoolId = (poolId: number): Promise<Channel[]> => {
-    return request({
-        url: '/pool/getChannelsByPoolId',
-        method: 'get',
-        params: { poolId },
-    });
+    return request.get('/pool/getChannelsByPoolId', {params: {poolId}}).then(res => res.data);
 };
 
-// 测试渠道
+/** 测试渠道 */
 export const testChannelByPoolId = (poolId: number, channelId: number): Promise<any> => {
-    return request.put(`/pool/testChannelByPoolId/${poolId}`, null, {
-        params: { channelId }
-    });
+    return request.put(`/pool/testChannelByPoolId/${poolId}`, null, {params: {channelId}});
 };
 
-// 更新渠道（用于启用/禁用/编辑）
-export const updateChannelByPoolId = (poolId: number, channel: Channel): Promise<any> => {
+/** 更新渠道 */
+export const updateChannelByPoolId = (poolId: number, channel: Partial<Channel>): Promise<any> => {
     return request.put(`/pool/updateChannelByPoolId/${poolId}`, channel);
 };
 
-// 删除渠道
+/** 删除渠道 */
 export const deleteChannelByPoolId = (poolId: number, channelId: number): Promise<any> => {
-    return request.delete(`/pool/deleteChannelByPoolId/${poolId}`, {
-        params: { channelId }
-    });
+    return request.delete(`/pool/deleteChannelByPoolId/${poolId}`, {params: {channelId}});
 };
 
-/**
- * 根据号池ID和渠道ID查询渠道详细信息
- * @param poolId 号池ID
- * @param channelId 渠道ID
- * @returns 渠道详情
- */
-export function getChannelDetail(poolId: number, channelId: number): Promise<Channel> {
-    return request({
-        url: `/pool/getChannelByPoolId/${poolId}`,
-        method: 'get',
-        params: { channelId }
-    });
-}
+/** 根据ID查询渠道详情 */
+export const getChannelDetail = (poolId: number, channelId: number): Promise<Channel> => {
+    return request.get(`/pool/getChannelByPoolId/${poolId}`, {params: {channelId}}).then(res => res.data);
+};
 
-/**
- * 根据号池ID添加新渠道
- * @param poolId 号池ID
- * @param channel 渠道数据
- * @returns Promise
- */
-export function addChannelByPoolId(poolId: number, channel: Channel): Promise<any> {
-    return request({
-        url: `/pool/addChannelsByPoolId/${poolId}`,
-        method: 'post',
-        data: channel
-    });
-}
+/** 根据号池ID添加新渠道 */
+export const addChannelByPoolId = (poolId: number, channel: Omit<Channel, 'id'>): Promise<any> => {
+    return request.post(`/pool/addChannelsByPoolId/${poolId}`, channel);
+};

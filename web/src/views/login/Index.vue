@@ -1,7 +1,7 @@
 <template>
   <div class="login-container">
     <div class="login-form">
-      <h2>系统登录</h2>
+      <h2>FuFu 号池管理系统登录</h2>
       <form @submit.prevent="handleLogin">
         <div class="form-group">
           <label for="username">用户名</label>
@@ -26,7 +26,7 @@
 import { ref } from 'vue';
 import { useRouter } from 'vue-router';
 // 假设你有一个封装好的axios实例
-import request from '@/utils/request';
+import request from '@/api/index';
 
 const username = ref('admin');
 const password = ref('admin');
@@ -38,32 +38,20 @@ const handleLogin = async () => {
   loading.value = true;
   error.value = '';
   try {
-    const res = await request.post('/api/account/login', {
+    const res = await request.post('/account/login', {
       username: username.value,
       password: password.value,
     });
-
     const token = res.data.token;
-
     if (token) {
-      // 将token存储到localStorage
       localStorage.setItem('authToken', token);
-      // 跳转到首页
       router.push('/');
     } else {
-      // 作为一种保护，如果成功响应中没有token，也视为错误
-      throw new Error('登录成功，但未获取到有效的Token。');
+      error.value = '登录成功，但未能获取到Token。';
     }
-
   } catch (err: any) {
-    // 3. 处理错误逻辑。
-    // 所有非200的业务错误和网络错误都会被这里的 catch 捕获。
-    // err.message 就是拦截器中 new Error(res.msg) 传递过来的错误信息。
-    console.error('登录失败，错误详情:', err.message);
-    error.value = err.message || '登录失败，发生未知错误。';
-
+    error.value = err.message || '登录失败';
   } finally {
-    // 4. 无论成功或失败，都结束加载状态。
     loading.value = false;
   }
 };

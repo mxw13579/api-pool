@@ -1,36 +1,27 @@
 import request from './index';
 import type { ProxyEntity } from '@/types';
 
-export const getProxyList = () => {
-    return request({
-        url: '/proxy/list',
-        method: 'get',
-    }) as Promise<ProxyEntity[]>;
+/** 获取代理列表 */
+export const getProxyList = (): Promise<ProxyEntity[]> => {
+    return request.get('/proxy/list').then(res => res.data);
 };
 
-export const addProxy = (data: Omit<ProxyEntity, 'id'>) => {
-    return request({
-        url: '/proxy/add',
-        method: 'post',
-        data,
-    });
+/** 新增代理 */
+export const addProxy = (data: Omit<ProxyEntity, 'id'>): Promise<any> => {
+    return request.post('/proxy/add', data);
 };
 
-export const updateProxy = (data: ProxyEntity) => {
-    return request({
-        url: '/proxy/update',
-        method: 'put',
-        data,
-    });
+/** 更新代理 */
+export const updateProxy = (data: Partial<ProxyEntity>): Promise<any> => {
+    return request.put('/proxy/update', data);
 };
 
-export function addProxyBatches(data: any) {
-    return request.post('/proxy/add-batches', data);
-}
+/** 批量新增代理 */
+export const addProxyBatches = (data: any): Promise<number> => {
+    return request.post('/proxy/add-batches', data).then(res => res.data);
+};
 
-export const deleteProxy = (id: number) => {
-    return request({
-        url: `/proxy/delete/${id}`,
-        method: 'delete',
-    });
+/** 删除代理 */
+export const deleteProxy = (id: number): Promise<any> => {
+    return request.delete(`/proxy/delete/${id}`);
 };
