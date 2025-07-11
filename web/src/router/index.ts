@@ -46,7 +46,7 @@ const router = createRouter({
 });
 
 
-router.beforeEach((to, from, next): void => {
+router.beforeEach((to, _from, next): void => {
     const token = localStorage.getItem('authToken');
     if (to.meta.isPublic || token) {
         next();
