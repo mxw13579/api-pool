@@ -106,7 +106,6 @@
                 <version>${spring-boot.version}</version>
                 <configuration>
                     <mainClass>com.fufu.apipool.ApiPoolApplication</mainClass>
-                    <skip>true</skip>
                 </configuration>
                 <executions>
                     <execution>
