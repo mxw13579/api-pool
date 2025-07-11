@@ -30,7 +30,7 @@
       <el-table-column prop="group" label="分组" />
       <el-table-column label="已用配额">
         <template #default="{ row }">
-          {{ row.used_quota ? (Math.floor(row.used_quota / 500000 * 100) / 100) : 0 }}
+          {{ row.usedQuota ? (Math.floor(row.usedQuota / 500000 * 100) / 100) : 0 }}
         </template>
       </el-table-column>
       <el-table-column prop="priority" label="优先级" />
