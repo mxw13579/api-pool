@@ -3,7 +3,7 @@ import Layout from '@/layout/Index.vue';
 
 const routes = [
     {
-        path: '/login',
+        path: '/index.html',
         name: 'Login',
         component: () => import('@/views/login/Index.vue'),
         meta: { title: '登录', isPublic: true }

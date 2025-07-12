@@ -286,8 +286,14 @@ const testChannel = async (row: Channel) => {
   try {
     await testChannelByPoolId(props.poolId!, row.id);
     ElMessage.success('测试请求已发送，请稍后刷新查看响应时间');
-  } catch (e) {
-    ElMessage.error('测试失败');
+  }  catch (e: unknown) {
+    let msg = '测试失败';
+    if (e && typeof e === 'object' && 'message' in e) {
+      msg += `：${(e as any).message}`;
+    } else if (typeof e === 'string') {
+      msg += `：${e}`;
+    }
+    ElMessage.error(msg);
   }
 };
 

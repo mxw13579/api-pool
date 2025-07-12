@@ -9,10 +9,8 @@ import com.alibaba.fastjson2.TypeReference;
 import com.fufu.apipool.common.ApiHttpUtil;
 import com.fufu.apipool.common.constant.ApiUrlEnum;
 import com.fufu.apipool.common.constant.ChannelStatus;
-import com.fufu.apipool.domain.newapi.Channel;
-import com.fufu.apipool.domain.newapi.ChannelDTO;
-import com.fufu.apipool.domain.newapi.ChannelPageData;
-import com.fufu.apipool.domain.newapi.R;
+import com.fufu.apipool.common.constant.ChannelType;
+import com.fufu.apipool.domain.newapi.*;
 import com.fufu.apipool.entity.PoolEntity;
 import com.fufu.apipool.entity.PoolProxyRelationEntity;
 import com.fufu.apipool.entity.ProxyEntity;
@@ -33,10 +31,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentLinkedQueue;
-import java.util.concurrent.ExecutorService;
+import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
@@ -171,7 +166,7 @@ public class PoolServiceImpl implements PoolService {
         R r = JSON.parseObject(send, R.class);
         if (!r.getSuccess().equals(true)) {
             log.error("测试渠道失败: {}", r);
-            throw new RuntimeException("测试渠道失败");
+            throw new RuntimeException("测试渠道失败:"+r.getMessage());
         }
         return r.getTime();
     }
@@ -324,6 +319,13 @@ public class PoolServiceImpl implements PoolService {
             channelDTO.setKey(list.get(i));
             channelDTO.setName(dto.getName() + "-" + i);
             try {
+                if (channelDTO.getType().equals(ChannelType.VERTEX_AI)) {
+                    String vertexAiKey  = channelDTO.getKey();
+                    GoogleServiceAccount googleServiceAccount = JSON.parseObject(vertexAiKey, GoogleServiceAccount.class);
+                    String projectId = googleServiceAccount.getProject_id();
+                    channelDTO.setName(projectId);
+                }
+
                 // 3. 复用现有的 `addChannelByPoolId` 逻辑
                 Boolean success = this.addChannelByPoolId(allPools.get(offset).getId(), channelDTO);
                 if (success != null && success) {
@@ -408,12 +410,17 @@ public class PoolServiceImpl implements PoolService {
 
         List<Channel> allChannels = getChannelsByPoolId(poolId);
         int maxRetries = pool.getMaxMonitorRetries() == null ? 5 : pool.getMaxMonitorRetries();
+        int minActive = pool.getMinActiveChannels() == null ? 1 : pool.getMinActiveChannels();
 
+        // 1. 分类渠道
         List<Channel> activeChannels = new ArrayList<>();
         List<Channel> retryableFailedChannels = new ArrayList<>();
         List<Channel> pristineInactiveChannels = new ArrayList<>();
 
-        allChannels = allChannels.stream().sorted(Comparator.comparingInt(Channel::getUsedQuota).reversed()).toList();
+        // 按使用额度降序排序，优先测试额度高的渠道
+        allChannels = allChannels.stream()
+                .sorted(Comparator.comparingInt(Channel::getUsedQuota).reversed())
+                .toList();
 
         for (Channel channel : allChannels) {
             if (channel.getStatus() == ChannelStatus.ENABLED) {
@@ -428,93 +435,149 @@ public class PoolServiceImpl implements PoolService {
             }
         }
 
-        retryableFailedChannels = retryableFailedChannels.stream().sorted(Comparator.comparingInt(Channel::getUsedQuota).reversed()).toList();
-        pristineInactiveChannels = pristineInactiveChannels.stream().sorted(Comparator.comparingInt(Channel::getUsedQuota).reversed()).toList();
-
-
         log.info("号池[{}]: 监控开始. 激活: {}, 待重试: {}, 闲置: {}.",
                 pool.getName(), activeChannels.size(), retryableFailedChannels.size(), pristineInactiveChannels.size());
 
         List<CompletableFuture<Void>> tasks = new ArrayList<>();
         AtomicInteger failureCount = new AtomicInteger(0);
+        // 使用线程安全的队列收集从“待重试”状态恢复的渠道
+        ConcurrentLinkedQueue<Channel> recoveredChannels = new ConcurrentLinkedQueue<>();
 
-        // 检测激活渠道
+        // 2. 检测激活渠道
         for (Channel channel : activeChannels) {
             tasks.add(CompletableFuture.runAsync(() -> {
-                try {
-                    testChannelByPoolId(pool.getId(), channel.getId());
-                    log.info("号池[{}]: 检测到激活渠道[{}({})]正常,当前使用额度{}。", pool.getName(), channel.getName(), channel.getId(), (channel.getUsedQuota() / 500000));
-                } catch (Exception e) {
+                // 尝试1次主测试 + 2次重试，总共3次
+                boolean isAlive = testChannelWithRetries(pool.getId(), channel.getId(), 2, 1000L);
+
+                if (isAlive) {
+                    log.info("号池[{}]: 激活渠道[{}({})]检测正常, 当前使用额度{}.", pool.getName(), channel.getName(), channel.getId(), (channel.getUsedQuota() / 500000));
+                } else {
+                    // 经过重试后仍然失败
                     failureCount.incrementAndGet();
                     NameParseResult result = parseChannelName(channel.getName());
-                    channel.setName(result.originalName() + " -监控失败- " + (result.retries() + 1) + "次");
+                    // 标记为失败1次
+                    channel.setName(result.originalName() + " -监控失败- 1次");
                     channel.setStatus(ChannelStatus.MANUALLY_DISABLED);
                     safeUpdateChannel(pool.getId(), channel);
+                    log.warn("号池[{}]: 激活渠道[{}({})]多次检测失败，已禁用。", pool.getName(), result.originalName(), channel.getId());
                 }
             }, monitoringExecutor));
         }
 
-        // 检测待重试渠道
+        // 3. 检测待重试渠道
         for (Channel channel : retryableFailedChannels) {
             tasks.add(CompletableFuture.runAsync(() -> {
                 try {
                     testChannelByPoolId(pool.getId(), channel.getId());
+                    // 如果成功，不直接激活，而是标记为“已恢复”，并加入预备队列
                     NameParseResult result = parseChannelName(channel.getName());
                     channel.setName(result.originalName() + " -重试" + result.retries() + "次后恢复");
-                    channel.setStatus(ChannelStatus.ENABLED);
+                    channel.setStatus(ChannelStatus.MANUALLY_DISABLED); // 保持非激活状态
                     safeUpdateChannel(pool.getId(), channel);
+                    recoveredChannels.add(channel); // 添加到恢复队列
+                    log.info("号池[{}]: 渠道[{}({})]重试成功，已移至待激活列表。", pool.getName(), channel.getName(), channel.getId());
                 } catch (Exception e) {
+                    // 如果重试仍然失败，增加失败次数
                     NameParseResult result = parseChannelName(channel.getName());
                     channel.setName(result.originalName() + " -监控失败- " + (result.retries() + 1) + "次");
                     safeUpdateChannel(pool.getId(), channel);
+                    log.warn("号池[{}]: 待重试渠道[{}({})]再次检测失败。", pool.getName(), result.originalName(), channel.getId());
                 }
             }, monitoringExecutor));
         }
 
         CompletableFuture.allOf(tasks.toArray(new CompletableFuture[0])).join();
 
+        // 4. 判断是否需要激活新渠道
         // 重新获取最新状态来计算激活数量
         List<Channel> updatedChannels = getChannelsByPoolId(poolId);
         long currentActiveCount = updatedChannels.stream()
                 .filter(c -> c.getStatus() == ChannelStatus.ENABLED)
                 .count();
-        int minActive = pool.getMinActiveChannels() == null ? 1 : pool.getMinActiveChannels();
         int needed = minActive - (int) currentActiveCount;
 
-        if (needed > 0 && !pristineInactiveChannels.isEmpty()) {
-            log.info("号池[{}]: 当前激活 {} < 最小要求 {}, 需激活 {}个。开始检测闲置渠道...",
-                    pool.getName(), currentActiveCount, minActive, needed);
+        if (needed > 0) {
+            // 5. 准备待激活列表 (将恢复的渠道放在最前面，优先激活)
+            List<Channel> activationCandidates = new ArrayList<>();
+            // 恢复的渠道已按额度排序，直接添加
+            activationCandidates.addAll(new ArrayList<>(recoveredChannels));
+            // 闲置渠道也已按额度排序，追加在后面
+            activationCandidates.addAll(pristineInactiveChannels);
 
-            ConcurrentLinkedQueue<Channel> successfulInactiveChannels = new ConcurrentLinkedQueue<>();
-            List<CompletableFuture<Void>> activationTestTasks = new ArrayList<>();
+            if (!activationCandidates.isEmpty()) {
+                log.info("号池[{}]: 当前激活 {} < 最小要求 {}, 需激活 {}个。开始从 {} 个候选渠道中检测...",
+                        pool.getName(), currentActiveCount, minActive, needed, activationCandidates.size());
 
-            for(Channel channel : pristineInactiveChannels) {
-                activationTestTasks.add(CompletableFuture.runAsync(() -> {
-                    try {
-                        testChannelByPoolId(pool.getId(), channel.getId());
-                        successfulInactiveChannels.add(channel);
-                    } catch(Exception e) {
-                        NameParseResult result = parseChannelName(channel.getName());
-                        channel.setName(result.originalName() + " -监控失败- 1次");
-                        // 你可以根据业务需要设置状态
-                        channel.setStatus(ChannelStatus.MANUALLY_DISABLED);
-                        safeUpdateChannel(pool.getId(), channel);
-                    }
-                }, monitoringExecutor));
-            }
-            CompletableFuture.allOf(activationTestTasks.toArray(new CompletableFuture[0])).join();
-            List<Channel> sortedSuccessChannels = successfulInactiveChannels.stream()
-                    .sorted(Comparator.comparing(Channel::getId))
-                    .toList();
-            if (!successfulInactiveChannels.isEmpty()) {
-                sortedSuccessChannels.stream().limit(needed).forEach(channelToActivate -> {
-                    channelToActivate.setStatus(ChannelStatus.ENABLED);
-                    safeUpdateChannel(pool.getId(), channelToActivate);
-                    log.info("号池[{}]: 已成功激活渠道 [{}({}),当前使用额度{}]。", pool.getName(), channelToActivate.getName(), channelToActivate.getId(), (channelToActivate.getUsedQuota() / 500000));
-                });
+                ConcurrentLinkedQueue<Channel> successfulInactiveChannels = new ConcurrentLinkedQueue<>();
+                List<CompletableFuture<Void>> activationTestTasks = new ArrayList<>();
+
+                for(Channel channel : activationCandidates) {
+                    activationTestTasks.add(CompletableFuture.runAsync(() -> {
+                        try {
+                            testChannelByPoolId(pool.getId(), channel.getId());
+                            successfulInactiveChannels.add(channel);
+                        } catch(Exception e) {
+                            NameParseResult result = parseChannelName(channel.getName());
+                            channel.setName(result.originalName() + " -监控失败- 1次");
+                            channel.setStatus(ChannelStatus.MANUALLY_DISABLED);
+                            safeUpdateChannel(pool.getId(), channel);
+                            log.warn("号池[{}]: 候选渠道[{}({})]激活测试失败。", pool.getName(), result.originalName(), channel.getId());
+                        }
+                    }, monitoringExecutor));
+                }
+                CompletableFuture.allOf(activationTestTasks.toArray(new CompletableFuture[0])).join();
+
+                // 按ID排序以保证激活顺序的确定性
+                List<Channel> sortedSuccessChannels = successfulInactiveChannels.stream()
+                        .sorted(Comparator.comparing(Channel::getId))
+                        .toList();
+
+                if (!sortedSuccessChannels.isEmpty()) {
+                    sortedSuccessChannels.stream().limit(needed).forEach(channelToActivate -> {
+                        // 激活时可能需要重置名称
+                        NameParseResult result = parseChannelName(channelToActivate.getName());
+                        if (result.originalName() != null && !result.originalName().equals(channelToActivate.getName())) {
+                            channelToActivate.setName(result.originalName());
+                        }
+                        channelToActivate.setStatus(ChannelStatus.ENABLED);
+                        safeUpdateChannel(pool.getId(), channelToActivate);
+                        log.info("号池[{}]: 已成功激活渠道 [{}({})], 当前使用额度{}.", pool.getName(), channelToActivate.getName(), channelToActivate.getId(), (channelToActivate.getUsedQuota() / 500000));
+                    });
+                }
             }
         }
         log.info("号池[{}]: 监控任务执行完毕。", pool.getName());
+    }
+
+    /**
+     * 带重试机制的渠道测试方法。
+     * @param poolId 池ID
+     * @param channelId 渠道ID
+     * @param retries 重试次数 (例如，传入2代表首次失败后再重试2次)
+     * @param delayMillis 重试间隔（毫秒）
+     * @return 测试成功返回 true, 否则返回 false
+     */
+    private boolean testChannelWithRetries(Long poolId, Long channelId, int retries, long delayMillis) {
+        for (int i = 0; i <= retries; i++) {
+            try {
+                testChannelByPoolId(poolId, channelId);
+                return true; // 成功则直接返回
+            } catch (Exception e) {
+                if (i < retries) {
+                    log.warn("渠道[{}]检测失败，将在 {}ms 后进行第 {}/{} 次重试...", channelId, delayMillis, i + 1, retries);
+                    try {
+                        TimeUnit.MILLISECONDS.sleep(delayMillis);
+                    } catch (InterruptedException interruptedException) {
+                        Thread.currentThread().interrupt();
+                        log.error("渠道[{}]重试等待时被中断。", channelId);
+                        return false; // 等待被中断，直接返回失败
+                    }
+                } else {
+                    log.error("渠道[{}]经过 {} 次重试后仍检测失败。", channelId, retries, e);
+                }
+            }
+        }
+        return false; // 所有尝试都失败了
     }
 
 }

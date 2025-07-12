@@ -28,11 +28,20 @@ public class AllExceptionHandle {
 
 
     /**
+     * 运行时异常处理
+     */
+    @ExceptionHandler(RuntimeException.class)
+    public Result runtimeException(Exception e) {
+        log.error("运行时异常处理", e);
+        return ResultUtil.getFailResult("", "500",e.getMessage());
+    }
+
+    /**
      * 全局异常处理
      */
     @ExceptionHandler(Exception.class)
     public Result exception(Exception e) {
         log.error("全局异常处理", e);
-        return ResultUtil.getFailResult("", CommonRespCode.SYSTEM_ERROR);
+        return ResultUtil.getFailResult("", CommonRespCode.SYSTEM_ERROR,e.getMessage());
     }
 }
