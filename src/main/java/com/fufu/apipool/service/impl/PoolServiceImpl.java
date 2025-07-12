@@ -442,7 +442,7 @@ public class PoolServiceImpl implements PoolService {
         AtomicInteger failureCount = new AtomicInteger(0);
         // 使用线程安全的队列收集从“待重试”状态恢复的渠道
         ConcurrentLinkedQueue<Channel> recoveredChannels = new ConcurrentLinkedQueue<>();
-
+        log.info("开始检测激活渠道........");
         // 2. 检测激活渠道
         for (Channel channel : activeChannels) {
             tasks.add(CompletableFuture.runAsync(() -> {
@@ -463,7 +463,7 @@ public class PoolServiceImpl implements PoolService {
                 }
             }, monitoringExecutor));
         }
-
+        log.info("开始检测待重试渠道........");
         // 3. 检测待重试渠道
         for (Channel channel : retryableFailedChannels) {
             tasks.add(CompletableFuture.runAsync(() -> {
@@ -512,6 +512,7 @@ public class PoolServiceImpl implements PoolService {
                 List<CompletableFuture<Void>> activationTestTasks = new ArrayList<>();
 
                 for(Channel channel : activationCandidates) {
+                    log.info("开始检测候选渠道........");
                     activationTestTasks.add(CompletableFuture.runAsync(() -> {
                         try {
                             testChannelByPoolId(pool.getId(), channel.getId());
@@ -533,6 +534,7 @@ public class PoolServiceImpl implements PoolService {
                         .toList();
 
                 if (!sortedSuccessChannels.isEmpty()) {
+                    log.info("开始激活候选渠道........");
                     sortedSuccessChannels.stream().limit(needed).forEach(channelToActivate -> {
                         // 激活时可能需要重置名称
                         NameParseResult result = parseChannelName(channelToActivate.getName());
