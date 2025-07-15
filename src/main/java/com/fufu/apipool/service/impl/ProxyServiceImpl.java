@@ -121,16 +121,16 @@ public class ProxyServiceImpl implements ProxyService {
      */
     @Override
     public int deleteById(Long id) {
-        // 查询该代理被哪些池绑定
-        List<Long> poolIds = poolProxyRelationService.getRelationsByProxyId(id)
-                .stream()
-                .map(relation -> relation.getPoolId())
-                .collect(Collectors.toList());
-        if (!poolIds.isEmpty()) {
-            // 拼接池号
-            String poolStr = poolIds.stream().map(String::valueOf).collect(Collectors.joining(","));
-            throw new RuntimeException("该代理已被池[" + poolStr + "]绑定，无法删除！");
-        }
+//        // 查询该代理被哪些池绑定
+//        List<Long> poolIds = poolProxyRelationService.getRelationsByProxyId(id)
+//                .stream()
+//                .map(relation -> relation.getPoolId())
+//                .collect(Collectors.toList());
+//        if (!poolIds.isEmpty()) {
+//            // 拼接池号
+//            String poolStr = poolIds.stream().map(String::valueOf).collect(Collectors.joining(","));
+//            throw new RuntimeException("该代理已被池[" + poolStr + "]绑定，无法删除！");
+//        }
         int result = proxyMapper.deleteById(id);
         // 删除成功后，移除缓存
         if (result > 0) {
