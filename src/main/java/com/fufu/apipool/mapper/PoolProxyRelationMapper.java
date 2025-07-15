@@ -61,4 +61,10 @@ public interface PoolProxyRelationMapper {
      * @return 包含代理ID和绑定数量的列表
      */
     List<ProxyBindCountDTO> countByProxyIds(@Param("proxyIds") List<Long> proxyIds);
+
+    /**
+     * 查询最后使用的代理ID
+     * @return 最后使用的代理ID
+     */
+    Long findLastUsedProxyId();
 }

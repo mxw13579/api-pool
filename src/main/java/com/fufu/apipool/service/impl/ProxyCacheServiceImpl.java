@@ -1,6 +1,7 @@
 package com.fufu.apipool.service.impl;
 
 import com.fufu.apipool.entity.ProxyEntity;
+import com.fufu.apipool.service.PoolProxyRelationService;
 import com.fufu.apipool.service.ProxyCacheService;
 import com.fufu.apipool.service.ProxyService;
 import jakarta.annotation.PostConstruct;
@@ -30,6 +31,9 @@ public class ProxyCacheServiceImpl implements ProxyCacheService {
     @Autowired
     private ProxyService proxyService;
 
+    @Autowired
+    private PoolProxyRelationService poolProxyRelationService;
+
     // 缓存所有代理，Key: proxyId, Value: ProxyEntity
     private final ConcurrentHashMap<Long, ProxyEntity> proxyCache = new ConcurrentHashMap<>();
 
@@ -46,7 +50,37 @@ public class ProxyCacheServiceImpl implements ProxyCacheService {
                 .filter(p -> p.getStatus() != null && p.getStatus() == 1)
                 .sorted(Comparator.comparing(ProxyEntity::getId))
                 .collect(Collectors.toList());
+
         activeProxyList = activeList;
+
+        if (activeList.isEmpty()) {
+            log.warn("没有可用的激活代理，轮询索引将从0开始。");
+            return;
+        }
+
+        // 2. 获取最后使用的代理ID
+        Long lastUsedProxyId = poolProxyRelationService.findLastUsedProxyId();
+        int startIndex = 0;
+
+        if (lastUsedProxyId != null) {
+            // 3. 在当前激活列表中查找该代理的索引
+            for (int i = 0; i < activeList.size(); i++) {
+                if (activeList.get(i).getId().equals(lastUsedProxyId)) {
+                    // 4. 如果找到，将起始索引设置为下一个位置，并处理边界情况
+                    startIndex = (i + 1) % activeList.size();
+                    log.info("找到最后使用的代理ID: {}, 轮询将从下一个代理开始，索引: {}", lastUsedProxyId, startIndex);
+                    break;
+                }
+            }
+            if (startIndex == 0) {
+                log.info("最后使用的代理ID: {} 不在当前激活列表中，轮询将从头开始。", lastUsedProxyId);
+            }
+        } else {
+            log.info("未找到任何代理使用记录，轮询将从头开始。");
+        }
+
+        // 5. 设置轮询计数器的初始值
+        this.roundRobinIndex.set(startIndex);
     }
 
     @Override
@@ -75,12 +109,7 @@ public class ProxyCacheServiceImpl implements ProxyCacheService {
     @Override
     public void refreshCache() {
         log.info("正在刷新代理缓存...");
-        // 这里需要调用selectAll()方法，但它返回的是ProxyVO，我们需要ProxyEntity
-        // 为了简单起见，假设ProxyServiceImpl的selectAll()返回的是ProxyEntity列表
-        // 或者在ProxyService中增加一个selectAllEntities()方法
-        // 我们直接使用proxyService.selectAll()，并假设它可以工作
-        // 注意：原ProxyServiceImpl.selectAll()返回VO，这里需要修改它或添加新方法返回Entity
-        List<ProxyEntity> allProxies = proxyService.selectAllEntities(); // 假设这个方法存在
+        List<ProxyEntity> allProxies = proxyService.selectAllEntities();
 
         proxyCache.clear();
         for (ProxyEntity proxy : allProxies) {

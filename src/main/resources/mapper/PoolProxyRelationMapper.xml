@@ -73,4 +73,14 @@
         GROUP BY
         proxy_id
     </select>
+
+    <select id="findLastUsedProxyId" resultType="java.lang.Long">
+        SELECT
+        proxy_id
+        FROM
+        pool_proxy_relation
+        ORDER BY
+        id DESC
+        LIMIT 1
+    </select>
 </mapper>

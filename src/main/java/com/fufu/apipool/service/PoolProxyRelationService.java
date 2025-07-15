@@ -59,4 +59,10 @@ public interface PoolProxyRelationService {
      * @return Map，key为代理ID，value为绑定数量
      */
     Map<Long, Integer> getBindCountsForProxies(List<Long> proxyIds);
+
+    /**
+     * 查询最后使用的代理ID
+     *
+     */
+    Long findLastUsedProxyId();
 }

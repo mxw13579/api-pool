@@ -70,4 +70,12 @@ public class PoolProxyRelationServiceImpl implements PoolProxyRelationService {
                 .collect(Collectors.toMap(ProxyBindCountDTO::getProxyId, ProxyBindCountDTO::getCount));
     }
 
+    /**
+     * 获取最后使用的代理ID
+     */
+    @Override
+    public Long findLastUsedProxyId() {
+        return poolProxyRelationMapper.findLastUsedProxyId();
+    }
+
 }
