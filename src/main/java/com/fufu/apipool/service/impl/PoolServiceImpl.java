@@ -423,20 +423,48 @@ public class PoolServiceImpl implements PoolService {
                 groupedChannels.getOrDefault(ChannelGroup.PRISTINE, Collections.emptyList()).size(),
                 groupedChannels.getOrDefault(ChannelGroup.PERMANENTLY_FAILED, Collections.emptyList()).size());
 
-        // 3. 并发测试所有相关渠道（激活、待重试、闲置）
-        List<CompletableFuture<ChannelTestResult>> testFutures = new ArrayList<>();
-        addTestTasks(testFutures, groupedChannels.getOrDefault(ChannelGroup.ACTIVE, Collections.emptyList()), pool.getId(), ChannelGroup.ACTIVE, true);
-        addTestTasks(testFutures, groupedChannels.getOrDefault(ChannelGroup.RETRYABLE, Collections.emptyList()), pool.getId(), ChannelGroup.RETRYABLE, false);
-        addTestTasks(testFutures, groupedChannels.getOrDefault(ChannelGroup.PRISTINE, Collections.emptyList()), pool.getId(), ChannelGroup.PRISTINE, false);
+        // 3. 第一阶段：并发测试核心渠道（激活、待重试）
+        List<CompletableFuture<ChannelTestResult>> coreTestFutures = new ArrayList<>();
+        addTestTasks(coreTestFutures, groupedChannels.getOrDefault(ChannelGroup.ACTIVE, Collections.emptyList()), pool.getId(), ChannelGroup.ACTIVE, true);
+        addTestTasks(coreTestFutures, groupedChannels.getOrDefault(ChannelGroup.RETRYABLE, Collections.emptyList()), pool.getId(), ChannelGroup.RETRYABLE, false);
 
-        // 4. 等待所有测试完成
-        CompletableFuture.allOf(testFutures.toArray(new CompletableFuture[0])).join();
-        List<ChannelTestResult> results = testFutures.stream()
+        CompletableFuture.allOf(coreTestFutures.toArray(new CompletableFuture[0])).join();
+        List<ChannelTestResult> finalResults = coreTestFutures.stream()
                 .map(CompletableFuture::join)
                 .collect(Collectors.toList());
 
-        // 5. 集中处理所有测试结果
-        processTestResults(results, pool, minActive);
+        // 4. 评估是否需要补充渠道
+        long survivingActiveCount = finalResults.stream()
+                .filter(r -> r.originalGroup() == ChannelGroup.ACTIVE && r.isSuccess())
+                .count();
+
+        int needed = minActive - (int) survivingActiveCount;
+
+        // 5. 第二阶段：如果需要，则并发测试闲置渠道
+        if (needed > 0) {
+            log.info("号池[{}]: 核心渠道测试后存活 {} 个，少于要求的 {} 个，需要补充 {} 个。开始测试闲置渠道...",
+                    pool.getName(), survivingActiveCount, minActive, needed);
+
+            List<Channel> pristineChannels = groupedChannels.getOrDefault(ChannelGroup.PRISTINE, Collections.emptyList());
+            if (!pristineChannels.isEmpty()) {
+                List<CompletableFuture<ChannelTestResult>> pristineTestFutures = new ArrayList<>();
+                addTestTasks(pristineTestFutures, pristineChannels, pool.getId(), ChannelGroup.PRISTINE, false);
+
+                CompletableFuture.allOf(pristineTestFutures.toArray(new CompletableFuture[0])).join();
+                List<ChannelTestResult> pristineResults = pristineTestFutures.stream()
+                        .map(CompletableFuture::join)
+                        .collect(Collectors.toList());
+                finalResults.addAll(pristineResults); // 将第二阶段结果合并
+            } else {
+                log.warn("号池[{}]: 需要补充渠道，但已无闲置渠道可供测试。", pool.getName());
+            }
+        } else {
+            log.info("号池[{}]: 核心渠道测试后存活 {} 个，满足最低要求 {} 个，无需测试闲置渠道。",
+                    pool.getName(), survivingActiveCount, minActive);
+        }
+
+        // 6. 集中处理所有已执行的测试结果
+        processTestResults(finalResults, pool, minActive);
     }
 
     /**
