@@ -1,0 +1,68 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.fufu.apipool.mapper.ChannelMapper">
+    <resultMap id="channelResultMap" type="com.fufu.apipool.entity.ChannelEntity">
+        <!-- BaseEntity 字段 -->
+        <id     property="id"                column="id"/>
+        <result property="createdAt"         column="created_at"/>
+        <result property="updatedAt"         column="updated_at"/>
+        <result property="deletedAt"         column="deleted_at"/>
+        <result property="createdBy"         column="created_by"/>
+        <result property="updatedBy"         column="updated_by"/>
+        <result property="deletedBy"         column="deleted_by"/>
+
+        <!-- ChannelEntity 字段 -->
+        <result property="poolId"            column="pool_id"/>
+        <result property="type"              column="type"/>
+        <result property="key"               column="key"/>
+        <result property="openaiOrganization" column="openai_organization"/>
+        <result property="testModel"         column="test_model"/>
+        <result property="status"            column="status"/>
+        <result property="name"              column="name"/>
+        <result property="weight"            column="weight"/>
+        <result property="createdTime"       column="created_time"/>
+        <result property="testTime"          column="test_time"/>
+        <result property="responseTime"      column="response_time"/>
+        <result property="baseUrl"           column="base_url"/>
+        <result property="other"             column="other"/>
+        <result property="balance"           column="balance"/>
+        <result property="balanceUpdatedTime" column="balance_updated_time"/>
+        <result property="models"            column="models"/>
+        <result property="channelGroup"      column="channel_group"/>
+        <result property="usedQuota"         column="used_quota"/>
+        <result property="modelMapping"      column="model_mapping"/>
+        <result property="statusCodeMapping" column="status_code_mapping"/>
+        <result property="priority"          column="priority"/>
+        <result property="autoBan"           column="auto_ban"/>
+        <result property="otherInfo"         column="other_info"/>
+        <result property="tag"               column="tag"/>
+        <result property="setting"           column="setting"/>
+        <result property="paramOverride"     column="param_override"/>
+    </resultMap>
+
+    <select id="selectByPoolId" resultMap="channelResultMap">
+        SELECT * FROM channel WHERE pool_id = #{poolId}
+    </select>
+
+    <select id="selectById" resultMap="channelResultMap">
+        SELECT * FROM channel WHERE pool_id = #{poolId} AND id = #{channelId}
+    </select>
+
+    <insert id="insert" parameterType="com.fufu.apipool.entity.ChannelEntity">
+        INSERT INTO channel (id, pool_id, name, type, `key`, status, priority, weight, created_at, test_time, response_time, used_quota, balance, balance_updated_time, setting)
+        VALUES (#{id}, #{poolId}, #{name}, #{type}, #{key}, #{status}, #{priority}, #{weight}, #{createdAt}, #{testTime}, #{responseTime}, #{usedQuota}, #{balance}, #{balanceUpdatedTime}, #{setting})
+    </insert>
+
+    <update id="update" parameterType="com.fufu.apipool.entity.ChannelEntity">
+        UPDATE channel
+        <set>
+            <if test="name != null">name = #{name},</if>
+            <if test="status != null">status = #{status},</if>
+        </set>
+        WHERE pool_id = #{poolId} AND id = #{id}
+    </update>
+
+    <delete id="delete">
+        DELETE FROM channel WHERE pool_id = #{poolId} AND id = #{channelId}
+    </delete>
+</mapper>

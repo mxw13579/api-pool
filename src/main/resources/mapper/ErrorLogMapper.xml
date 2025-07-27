@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.fufu.apipool.mapper.ErrorLogMapper">
+    <resultMap id="errorLogResultMap" type="com.fufu.apipool.entity.ErrorLogEntity">
+        <!-- 主键映射 -->
+        <id property="id" column="id"/>
+        <!-- 业务字段映射 -->
+        <result property="poolId" column="pool_id"/>
+        <result property="poolName" column="pool_name"/>
+        <result property="channelId" column="channel_id"/>
+        <result property="channelName" column="channel_name"/>
+        <result property="errorMessage" column="error_message"/>
+        <!-- 基础字段映射 -->
+        <result property="createdAt" column="created_at"/>
+        <result property="updatedAt" column="updated_at"/>
+        <result property="deletedAt" column="deleted_at"/>
+        <result property="createdBy" column="created_by"/>
+        <result property="updatedBy" column="updated_by"/>
+        <result property="deletedBy" column="deleted_by"/>
+    </resultMap>
+    <insert id="insert" parameterType="com.fufu.apipool.entity.ErrorLogEntity">
+        INSERT INTO error_log (pool_id, pool_name, channel_id, channel_name, error_message, created_at)
+        VALUES (#{poolId}, #{poolName}, #{channelId}, #{channelName}, #{errorMessage}, #{createdAt})
+    </insert>
+
+    <select id="findByPoolId" resultMap="errorLogResultMap">
+        SELECT * FROM error_log WHERE pool_id = #{poolId} ORDER BY created_at DESC
+    </select>
+</mapper>

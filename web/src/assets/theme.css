@@ -1,0 +1,34 @@
+
+:root {
+  --app-bg-start: #f0f9ff;
+  --app-bg-end: #e0f2ff;
+  --card-bg: #ffffff;
+  --card-border: #d3eafc;
+  --card-shadow: rgba(0, 123, 255, 0.15);
+  --text-primary: #005a9e;
+  --text-secondary: #304455;
+  --text-muted: #5a788a;
+  --accent-color: #007bff;
+  --accent-color-light: #e6f7ff;
+  --el-color-primary: #007bff;
+}
+
+.page-container {
+  padding: 24px;
+  background: linear-gradient(180deg, var(--app-bg-start) 0%, var(--app-bg-end) 100%);
+  min-height: calc(100vh - 50px); /* Adjust based on header height */
+}
+
+.themed-card {
+  background: var(--card-bg);
+  border: 1px solid var(--card-border);
+  border-radius: 12px;
+  color: var(--text-secondary);
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.themed-card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 8px 25px var(--card-shadow);
+}
+
