@@ -68,6 +68,6 @@ export const getPoolStatistics = (poolId: number): Promise<any> => {
 
 /** 获取错误信息 */
 export const getErrorLogs = (poolId: number): Promise<any> => {
-    return request.get(`/pool//error-logs/${poolId}`).then(res => res.data);
+    return request.get(`/pool/error-logs/${poolId}`).then(res => res.data);
 };
 
