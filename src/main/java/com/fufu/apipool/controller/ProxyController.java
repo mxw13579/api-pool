@@ -96,4 +96,16 @@ public class ProxyController {
         int count = proxyService.deleteById(id);
         return ResultUtil.getSuccessResult(count);
     }
+
+    /**
+     * 批量删除代理
+     *
+     * @param ids 代理ID列表
+     * @return Result对象，包含删除行数
+     */
+    @DeleteMapping("/delete-batches")
+    public Result<Integer> deleteBatches(@RequestBody List<Long> ids) {
+        int count = proxyService.deleteByIds(ids);
+        return ResultUtil.getSuccessResult(count);
+    }
 }

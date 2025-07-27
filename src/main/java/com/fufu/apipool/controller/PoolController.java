@@ -4,6 +4,7 @@ import com.fufu.apipool.common.Result;
 import com.fufu.apipool.common.ResultUtil;
 import com.fufu.apipool.domain.newapi.Channel;
 import com.fufu.apipool.domain.newapi.ChannelDTO;
+import com.fufu.apipool.entity.ErrorLogEntity;
 import com.fufu.apipool.entity.PoolEntity;
 import com.fufu.apipool.service.PoolService;
 import lombok.AllArgsConstructor;
@@ -11,6 +12,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.Map;
 
 /**
  * 号池控制器
@@ -98,7 +100,7 @@ public class PoolController {
      * @return Result对象，包含测试结果
      */
     @PutMapping("/testChannelByPoolId/{poolId}")
-    public Result<Long> updateChannelByPoolId(@PathVariable("poolId") Long poolId,@RequestParam Long channelId) {
+    public Result<Long> testChannelByPoolId(@PathVariable("poolId") Long poolId,@RequestParam Long channelId) {
         return ResultUtil.getSuccessResult(poolService.testChannelByPoolId(poolId,channelId));
     }
     /**
@@ -158,5 +160,40 @@ public class PoolController {
     public Result<Integer> delete(@PathVariable Long id) {
         int count = poolService.deleteById(id);
         return ResultUtil.getSuccessResult(count);
+    }
+
+    /**
+     * 测试号池延迟
+     *
+     * @param id 号池ID
+     * @return Result对象，包含延迟时间
+     */
+    @GetMapping("/test-latency/{id}")
+    public Result<Long> testLatency(@PathVariable Long id) {
+        long latency = poolService.testLatency(id);
+        return ResultUtil.getSuccessResult(latency);
+    }
+
+    /**
+     * 获取号池统计信息
+     *
+     * @param id 号池ID
+     * @return Result对象，包含统计信息
+     */
+    @GetMapping("/statistics/{id}")
+    public Result<Map<String, Object>> getStatistics(@PathVariable Long id) {
+        Map<String, Object> statistics = poolService.getStatistics(id);
+        return ResultUtil.getSuccessResult(statistics);
+    }
+
+    /**
+     * 获取号池错误信息
+     *
+     * @param id 号池ID
+     * @return Result对象，包含统计信息
+     */
+    @GetMapping("/error-logs/{id}")
+    public Result<List<ErrorLogEntity>> getErrorLogs(@PathVariable Long id) {
+        return ResultUtil.getSuccessResult(poolService.getErrorLogs(id));
     }
 }

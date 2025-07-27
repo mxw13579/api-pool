@@ -25,3 +25,8 @@ export const addProxyBatches = (data: any): Promise<number> => {
 export const deleteProxy = (id: number): Promise<any> => {
     return request.delete(`/proxy/delete/${id}`);
 };
+
+/** 批量删除代理 */
+export const deleteProxyBatches = (ids: number[]): Promise<any> => {
+    return request.delete('/proxy/delete-batches', { data: ids });
+};

@@ -12,6 +12,7 @@
         <result property="monitoringIntervalTime" column="monitoring_interval_time"/>
         <result property="minActiveChannels" column="min_active_channels"/>
         <result property="maxMonitorRetries" column="max_monitor_retries"/>
+        <result property="latency" column="latency"/>
         <result property="createdAt" column="created_at"/>
         <result property="updatedAt" column="updated_at"/>
         <result property="deletedAt" column="deleted_at"/>
@@ -59,10 +60,9 @@
     </update>
 
 
-    <!-- 逻辑删除：只允许设置deleted_at和deleted_by -->
     <update id="deleteById">
         UPDATE pool
-        SET deleted_at=#{deletedAt}, deleted_by=#{deletedBy}
+        SET deleted_at=CURRENT_TIMESTAMP
         WHERE id=#{id} AND deleted_at IS NULL
     </update>
 </mapper>

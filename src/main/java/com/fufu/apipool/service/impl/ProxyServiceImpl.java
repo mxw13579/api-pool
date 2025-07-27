@@ -193,5 +193,17 @@ public class ProxyServiceImpl implements ProxyService {
         return successCount;
     }
 
+    @Override
+    public int deleteByIds(List<Long> ids) {
+        if (CollectionUtils.isEmpty(ids)) {
+            return 0;
+        }
+        int result = proxyMapper.deleteByIds(ids);
+        if (result > 0) {
+            ids.forEach(proxyCacheService::removeProxyFromCache);
+        }
+        return result;
+    }
+
 }
 

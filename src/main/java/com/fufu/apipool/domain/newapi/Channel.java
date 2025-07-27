@@ -56,6 +56,11 @@ public class Channel{
     private Long createdTime;
 
     /**
+     * 创建时间（时间戳）
+     */
+    private Long createdAt;
+
+    /**
      * 测试时间（时间戳）
      */
     private Long testTime;

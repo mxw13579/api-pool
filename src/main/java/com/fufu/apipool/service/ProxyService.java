@@ -59,4 +59,11 @@ public interface ProxyService {
      * @return 添加行数
      */
     int addBatches(ProxyBatchesEntity proxyBatches);
+
+    /**
+     * 批量删除代理
+     * @param ids 代理ID列表
+     * @return 删除行数
+     */
+    int deleteByIds(List<Long> ids);
 }

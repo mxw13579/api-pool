@@ -2,9 +2,11 @@ package com.fufu.apipool.service;
 
 import com.fufu.apipool.domain.newapi.Channel;
 import com.fufu.apipool.domain.newapi.ChannelDTO;
+import com.fufu.apipool.entity.ErrorLogEntity;
 import com.fufu.apipool.entity.PoolEntity;
 
 import java.util.List;
+import java.util.Map;
 
 /**
  * 号池服务接口
@@ -107,4 +109,25 @@ public interface PoolService {
      * @param poolId 号池ID
      */
     void monitorPool(Long poolId);
+
+    /**
+     * 测试号池延迟
+     * @param id 号池ID
+     * @return 延迟时间
+     */
+    long testLatency(Long id);
+
+    /**
+     * 获取号池统计信息
+     * @param id 号池ID
+     * @return 统计信息
+     */
+    Map<String, Object> getStatistics(Long id);
+
+    /**
+     * 获取号池错误日志
+     * @param id 号池ID
+     * @return 错误日志
+     */
+    List<ErrorLogEntity> getErrorLogs(Long id);
 }

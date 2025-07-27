@@ -11,6 +11,7 @@ import com.fufu.apipool.common.constant.ApiUrlEnum;
 import com.fufu.apipool.common.constant.ChannelStatus;
 import com.fufu.apipool.common.constant.ChannelType;
 import com.fufu.apipool.domain.newapi.*;
+import com.fufu.apipool.entity.ErrorLogEntity;
 import com.fufu.apipool.entity.PoolEntity;
 import com.fufu.apipool.entity.PoolProxyRelationEntity;
 import com.fufu.apipool.entity.ProxyEntity;
@@ -18,6 +19,9 @@ import com.fufu.apipool.mapper.PoolMapper;
 import com.fufu.apipool.service.PoolProxyRelationService;
 import com.fufu.apipool.service.PoolService;
 import com.fufu.apipool.service.ProxyCacheService;
+import com.fufu.apipool.entity.ChannelEntity;
+import com.fufu.apipool.service.ChannelService;
+import com.fufu.apipool.service.ErrorLogService;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -39,6 +43,9 @@ import java.util.concurrent.locks.ReentrantLock;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
+import java.time.DayOfWeek;
+import java.time.LocalDate;
+import java.time.ZoneOffset;
 
 /**
  * 号池服务实现类
@@ -56,6 +63,8 @@ public class PoolServiceImpl implements PoolService {
     private ApiHttpUtil apiHttpUtil;
     private final ProxyCacheService proxyCacheService;
     private final PoolProxyRelationService poolProxyRelationService;
+    private final ErrorLogService errorLogService;
+    private final ChannelService channelService;
 
     private final ExecutorService monitoringExecutor;
     private final ConcurrentHashMap<Long, Lock> poolLocks = new ConcurrentHashMap<>();
@@ -149,6 +158,11 @@ public class PoolServiceImpl implements PoolService {
         if (!r.getSuccess().equals(true)) {
             throw new RuntimeException("更新渠道失败");
         }
+        if (r.getData() == null) {
+            throw new RuntimeException("更新渠道失败：API未返回渠道信息");
+        }
+        ChannelEntity channelEntity = new ChannelEntity(r.getData(), poolId);
+        channelService.updateChannel(channelEntity);
         return true;
     }
 
@@ -225,6 +239,16 @@ public class PoolServiceImpl implements PoolService {
             throw new RuntimeException("调用API添加渠道失败: " + r.getMessage());
         }
 
+        Channel createdChannel = r.getData();
+        if (createdChannel == null) {
+            log.warn("API添加渠道成功，但未返回渠道信息，使用本地数据进行补偿。PoolId: {}, ChannelName: {}", poolId, channel.getName());
+            createdChannel = channel; // 使用我们发送的channel对象
+        }
+
+        ChannelEntity channelEntity = new ChannelEntity(createdChannel, poolId);
+
+        channelService.addChannel(channelEntity);
+
         log.info("API添加渠道成功。");
         // API返回的Channel对象可能包含由API生成的ID，但我们这里不需要
 
@@ -285,6 +309,7 @@ public class PoolServiceImpl implements PoolService {
         if (!r.getSuccess().equals(true)) {
             throw new RuntimeException("删除渠道失败");
         }
+        channelService.deleteChannel(poolId, channelId);
         return true;
     }
 
@@ -388,12 +413,20 @@ public class PoolServiceImpl implements PoolService {
     }
 
     /**
+     * 渠道测试执行结果的封装
+     * @param isSuccess 是否成功
+     * @param errorMessage 错误信息（如果失败）
+     */
+    private record TestExecutionResult(boolean isSuccess, String errorMessage) {}
+
+    /**
      * 渠道测试结果的封装
      * @param channel 渠道对象
      * @param isSuccess 是否成功
      * @param originalGroup 测试前的原始分组
+     * @param errorMessage 错误信息（如果失败）
      */
-    private record ChannelTestResult(Channel channel, boolean isSuccess, ChannelGroup originalGroup) {}
+    private record ChannelTestResult(Channel channel, boolean isSuccess, ChannelGroup originalGroup, String errorMessage) {}
 
     /**
      * 重构后的核心监控逻辑。
@@ -494,18 +527,18 @@ public class PoolServiceImpl implements PoolService {
                               Long poolId, ChannelGroup group, boolean withRetries) {
         for (Channel channel : channels) {
             futures.add(CompletableFuture.supplyAsync(() -> {
-                boolean isSuccess;
+                TestExecutionResult result;
                 if (withRetries) {
-                    isSuccess = testChannelWithRetries(poolId, channel.getId(), 2, 1000L);
+                    result = testChannelWithRetries(poolId, channel.getId(), 2, 1000L);
                 } else {
                     try {
                         testChannelByPoolId(poolId, channel.getId());
-                        isSuccess = true;
+                        result = new TestExecutionResult(true, null);
                     } catch (Exception e) {
-                        isSuccess = false;
+                        result = new TestExecutionResult(false, e.getMessage());
                     }
                 }
-                return new ChannelTestResult(channel, isSuccess, group);
+                return new ChannelTestResult(channel, result.isSuccess(), group, result.errorMessage());
             }, monitoringExecutor));
         }
     }
@@ -532,6 +565,15 @@ public class PoolServiceImpl implements PoolService {
             } else {
                 log.warn("号池[{}]: 候选渠道[{}({})]测试失败。", pool.getName(), nameResult.originalName(), channel.getId());
             }
+
+            ErrorLogEntity errorLog = new ErrorLogEntity();
+            errorLog.setPoolId(pool.getId());
+            errorLog.setPoolName(pool.getName());
+            errorLog.setChannelId(channel.getId());
+            errorLog.setChannelName(nameResult.originalName());
+            errorLog.setErrorMessage(CharSequenceUtil.isNotBlank(failure.errorMessage()) ? failure.errorMessage() : "监控测试失败");
+            errorLogService.logError(errorLog);
+
             safeUpdateChannel(pool.getId(), channel);
         }
 
@@ -574,12 +616,14 @@ public class PoolServiceImpl implements PoolService {
         log.info("号池[{}]: 监控任务执行完毕。", pool.getName());
     }
 
-        private boolean testChannelWithRetries(Long poolId, Long channelId, int retries, long delayMillis) {
+        private TestExecutionResult testChannelWithRetries(Long poolId, Long channelId, int retries, long delayMillis) {
+        String lastExceptionMessage = "";
         for (int i = 0; i <= retries; i++) {
             try {
                 testChannelByPoolId(poolId, channelId);
-                return true; // 成功则直接返回
+                return new TestExecutionResult(true, null); // 成功
             } catch (Exception e) {
+                lastExceptionMessage = e.getMessage();
                 if (i < retries) {
                     log.warn("渠道[{}]检测失败，将在 {}ms 后进行第 {}/{} 次重试...", channelId, delayMillis, i + 1, retries);
                     try {
@@ -587,14 +631,14 @@ public class PoolServiceImpl implements PoolService {
                     } catch (InterruptedException interruptedException) {
                         Thread.currentThread().interrupt();
                         log.error("渠道[{}]重试等待时被中断。", channelId);
-                        return false; // 等待被中断，直接返回失败
+                        return new TestExecutionResult(false, "Interrupted during retry wait");
                     }
                 } else {
                     log.error("渠道[{}]经过 {} 次重试后仍检测失败。", channelId, retries, e);
                 }
             }
         }
-        return false; // 所有尝试都失败了
+        return new TestExecutionResult(false, lastExceptionMessage); // 所有尝试都失败了
     }
 
         private void safeUpdateChannel(Long poolId, Channel channel) {
@@ -620,5 +664,111 @@ public class PoolServiceImpl implements PoolService {
         } finally {
             lock.unlock();
         }
+    }
+
+    @Override
+    public long testLatency(Long id) {
+        PoolEntity poolEntity = selectById(id);
+        String endpoint = poolEntity.getEndpoint();
+        if (endpoint == null || endpoint.isEmpty()) {
+            return -1L;
+        }
+
+        String host;
+        try {
+            // 使用 URI 解析，自动去除协议和端口
+            java.net.URI uri = endpoint.contains("://") ? new java.net.URI(endpoint) : new java.net.URI("http://" + endpoint);
+            host = uri.getHost();
+            if (host == null) {
+                // 如果没有协议，getHost 可能为 null，尝试直接用 endpoint
+                host = endpoint.contains(":") ? endpoint.substring(0, endpoint.indexOf(":")) : endpoint;
+            }
+        } catch (Exception e) {
+            log.error("Invalid endpoint URI: " + endpoint, e);
+            return -1L;
+        }
+
+        try {
+            // 判断操作系统，设置不同的 ping 命令参数
+            String os = System.getProperty("os.name").toLowerCase();
+            List<String> command = new ArrayList<>();
+            command.add("ping");
+            if (os.contains("win")) {
+                command.add("-n");
+            } else {
+                command.add("-c");
+            }
+            command.add("5");
+            command.add(host);
+
+            ProcessBuilder processBuilder = new ProcessBuilder(command);
+            processBuilder.redirectErrorStream(true);
+            Process process = processBuilder.start();
+
+            try (java.io.BufferedReader reader = new java.io.BufferedReader(new java.io.InputStreamReader(process.getInputStream()))) {
+                String line;
+                List<Double> latencies = new ArrayList<>();
+                // 兼容 Windows 和 Linux 的延迟正则
+                Pattern pattern = Pattern.compile("(time|时间|ʱ��)[=<]?([\\d.]+) ?ms", Pattern.CASE_INSENSITIVE);
+                while ((line = reader.readLine()) != null) {
+                    log.info("ping日志: {}", line); // 打印每一行日志
+                    Matcher matcher = pattern.matcher(line);
+                    if (matcher.find()) {
+                        // group(2) 是延迟数值
+                        latencies.add(Double.parseDouble(matcher.group(2)));
+                    }
+                }
+
+                int exitCode = process.waitFor();
+                if (exitCode == 0 && !latencies.isEmpty()) {
+                    double average = latencies.stream().mapToDouble(a -> a).average().orElse(-1.0);
+                    return (long) average;
+                } else {
+                    return -1L;
+                }
+            }
+        } catch (Exception e) {
+            log.error("Ping failed for address: " + endpoint, e);
+            return -1L;
+        }
+    }
+
+
+    @Override
+    public Map<String, Object> getStatistics(Long id) {
+        List<ChannelEntity> channels = channelService.getChannelsByPoolId(id);
+        Map<String, Object> statistics = new HashMap<>();
+
+        LocalDate today = LocalDate.now();
+        long todayStart = today.atStartOfDay().toEpochSecond(ZoneOffset.UTC);
+        long yesterdayStart = today.minusDays(1).atStartOfDay().toEpochSecond(ZoneOffset.UTC);
+        long weekStart = today.with(DayOfWeek.MONDAY).atStartOfDay().toEpochSecond(ZoneOffset.UTC);
+        long monthStart = today.withDayOfMonth(1).atStartOfDay().toEpochSecond(ZoneOffset.UTC);
+
+        long todayCount = channels.stream().filter(c -> c.getCreatedAt() != null && c.getCreatedAt() >= todayStart).count();
+        long yesterdayCount = channels.stream().filter(c -> c.getCreatedAt() != null && c.getCreatedAt() >= yesterdayStart && c.getCreatedAt() < todayStart).count();
+        long weekCount = channels.stream().filter(c -> c.getCreatedAt() != null && c.getCreatedAt() >= weekStart).count();
+        long monthCount = channels.stream().filter(c -> c.getCreatedAt() != null && c.getCreatedAt() >= monthStart).count();
+        long totalCount = channels.size();
+
+        Map<String, Long> accountStats = new HashMap<>();
+        accountStats.put("today", todayCount);
+        accountStats.put("yesterday", yesterdayCount);
+        accountStats.put("thisWeek", weekCount);
+        accountStats.put("thisMonth", monthCount);
+        accountStats.put("total", totalCount);
+
+        statistics.put("accountStats", accountStats);
+        return statistics;
+    }
+
+    /**
+     * 获取号池错误日志
+     * @param id 号池ID
+     * @return 错误日志
+     */
+    @Override
+    public List<ErrorLogEntity> getErrorLogs(Long id) {
+        return errorLogService.getErrorsByPoolId(id);
     }
 }

@@ -55,3 +55,19 @@ export const getChannelDetail = (poolId: number, channelId: number): Promise<Cha
 export const addChannelByPoolId = (poolId: number, channel: Omit<Channel, 'id'>): Promise<any> => {
     return request.post(`/pool/addChannelsByPoolId/${poolId}`, channel);
 };
+
+/** 测试延迟 */
+export const testPoolLatency = (poolId: number): Promise<number> => {
+    return request.get(`/pool/test-latency/${poolId}`).then(res => res.data);
+};
+
+/** 获取统计信息 */
+export const getPoolStatistics = (poolId: number): Promise<any> => {
+    return request.get(`/pool/statistics/${poolId}`).then(res => res.data);
+};
+
+/** 获取错误信息 */
+export const getErrorLogs = (poolId: number): Promise<any> => {
+    return request.get(`/pool//error-logs/${poolId}`).then(res => res.data);
+};
+

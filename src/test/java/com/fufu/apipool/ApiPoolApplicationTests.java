@@ -10,6 +10,7 @@ import com.fufu.apipool.domain.newapi.ChannelPageData;
 import com.fufu.apipool.domain.newapi.LoginRequest;
 import com.fufu.apipool.domain.newapi.R;
 import com.fufu.apipool.domain.newapi.User;
+import com.fufu.apipool.monitor.AuthResponse;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -87,34 +88,32 @@ class ApiPoolApplicationTests {
 
 
 
-//    /**
-//     *
-//     */
-//    @Test
-//    void contextLoads() {
-//
-//        NewApiLoginRequest request = new NewApiLoginRequest();
-//
-//        request.setUsername("lizelin");
-//        request.setPassword("U93OzLV7yBD06d9e");
-//        HttpRequest post = HttpUtil.createPost("http://45.192.111.246:3000/api/user/login?turnstile=");
-//
-//        HttpRequest body = post.body(JSON.toJSONString(request));
-//        HttpResponse execute = body.execute();
-//
-//
-//        System.out.println(execute.getCookies());
-//        NewApiR newApiR = JSON.parseObject(execute.body(), NewApiR.class);
-//        System.out.println(newApiR.toString());
-//        NewApiUser data = JSON.parseObject(newApiR.getData(),NewApiUser.class);
-//        //
-//        //http://45.192.111.246:3000/api/data/?username=&start_timestamp=1751858998&end_timestamp=1751948998&default_time=hour
-//        HttpRequest get = HttpUtil.createGet("http://45.192.111.246:3000/api/data/?username=&start_timestamp=1751858998&end_timestamp=1751948998&default_time=hour");
-//        List<HttpCookie> cookies = execute.getCookies();
-//        get.cookie(cookies.get(0));
-//        get.header("New-Api-User",String.valueOf(data.getId()));
-//        HttpResponse execute1 = get.execute();
-//        System.out.println(execute1.body());
-//    }
+    /**
+     *
+     */
+    @Test
+    void contextLoads2() {
+
+        //http://120.25.207.234:8090/api/collections/system_stats/records
+
+
+        //NbkJ44giJ60jYuEqG5cL4G2lOnMS12wd
+        //2243716932@qq.com
+
+
+        HttpRequest login = HttpUtil.createPost("http://120.25.207.234:8090/api/collections/users/auth-with-password");
+        login.body("{\"identity\":\"2243716932@qq.com\",\"password\":\"NbkJ44giJ60jYuEqG5cL4G2lOnMS12wd\"}");
+        HttpResponse loginExecute = login.execute();
+        log.info("loginExecute:{}",loginExecute);
+
+        AuthResponse authResponse = JSON.parseObject(loginExecute.body(), AuthResponse.class);
+
+        HttpRequest get = HttpUtil.createGet("http://120.25.207.234:8090/api/collections/system_stats/records");
+        get.header("Authorization", "Bearer " + authResponse.getToken());
+        HttpResponse execute = get.execute();
+
+        String body = execute.body();
+        log.info("body:{}",body);
+    }
 
 }

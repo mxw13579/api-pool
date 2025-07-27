@@ -22,4 +22,6 @@ public interface ProxyMapper {
     int update(ProxyEntity proxyEntity);
 
     int deleteById(Long id);
+
+    int deleteByIds(List<Long> ids);
 }

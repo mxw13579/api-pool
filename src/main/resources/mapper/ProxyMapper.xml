@@ -47,10 +47,21 @@
     </update>
 
 
-    <!-- 逻辑删除：只允许设置deleted_at和deleted_by -->
+    <!-- 逻辑删除 -->
     <update id="deleteById">
         UPDATE proxy
-        SET deleted_at=#{deletedAt}, deleted_by=#{deletedBy}
+        SET deleted_at=CURRENT_TIMESTAMP
         WHERE id=#{id} AND deleted_at IS NULL
+    </update>
+
+    <!-- 批量逻辑删除 -->
+    <update id="deleteByIds">
+        UPDATE proxy
+        SET deleted_at=CURRENT_TIMESTAMP
+        WHERE id IN
+        <foreach collection="list" item="id" open="(" separator="," close=")">
+            #{id}
+        </foreach>
+        AND deleted_at IS NULL
     </update>
 </mapper>

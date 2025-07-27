@@ -39,6 +39,7 @@ export interface PoolEntity extends BaseEntity {
     monitoringIntervalTime: number;
     minActiveChannels: number;
     maxMonitorRetries: number;
+    latency?: number;
 }
 
 // 代理实体

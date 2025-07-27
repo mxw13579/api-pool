@@ -4,21 +4,8 @@ import { ElMessage } from 'element-plus';
 const service = axios.create({
     baseURL: '/api', // Vite 代理会处理这个
     timeout: 10000,
+    withCredentials: true, // 允许跨域请求携带 cookie
 });
-//请求拦截器
-service.interceptors.request.use(
-    config => {
-        const token = localStorage.getItem('authToken');
-        if (token) {
-            config.headers['Authorization'] = `Bearer ${token}`;
-        }
-        return config;
-    },
-    error => {
-        console.error('Request Error:', error);
-        return Promise.reject(error);
-    }
-);
 
 service.interceptors.response.use(
     (response: AxiosResponse) => {

@@ -42,4 +42,9 @@ public class PoolEntity extends BaseEntity {
      * 最大监控重试次数
      */
     private Integer maxMonitorRetries;
+
+    /**
+     * 延迟
+     */
+    private Long latency;
 }

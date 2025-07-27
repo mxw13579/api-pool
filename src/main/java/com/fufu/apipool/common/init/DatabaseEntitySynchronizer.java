@@ -135,14 +135,14 @@ public class DatabaseEntitySynchronizer implements ApplicationRunner {
         for (Field field : BaseEntity.class.getDeclaredFields()) {
             fields.put(camelToUnderscore(field.getName()), getSqlType(field.getType()));
         }
+        fields.remove("id");
         DatabaseMetaData metaData = conn.getMetaData();
         ResultSet tables = metaData.getTables(null, null, tableName, null);
         if (!tables.next()) {
             // 表不存在，创建表
             StringBuilder sb = new StringBuilder("CREATE TABLE ").append(tableName).append(" (");
             sb.append("id INTEGER PRIMARY KEY AUTOINCREMENT,");
-            fields.remove("id");
-            for (Map.Entry<String, String> entry : fields.entrySet()) {
+                        for (Map.Entry<String, String> entry : fields.entrySet()) {
                 sb.append(entry.getKey()).append(" ").append(entry.getValue()).append(",");
             }
             sb.deleteCharAt(sb.length() - 1).append(");");
@@ -167,6 +167,9 @@ public class DatabaseEntitySynchronizer implements ApplicationRunner {
         }
     }
     private String getSqlType(Class<?> type) {
+        if (type.isEnum()) {
+            return "TEXT";
+        }
         if (type == Long.class || type == long.class) {
             return "INTEGER";
         }
