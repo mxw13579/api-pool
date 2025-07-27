@@ -6,7 +6,9 @@
     </div>
 
     <div v-if="loading" class="loading-state">
-      <el-icon class="is-loading" size="40"><Loading /></el-icon>
+      <el-icon class="is-loading" size="40">
+        <Loading/>
+      </el-icon>
       <p>正在加载号池数据...</p>
     </div>
 
@@ -17,11 +19,12 @@
             <div class="card-header">
               <span class="pool-name">{{ pool.name }}</span>
               <el-dropdown trigger="click">
-                <el-button text :icon="MoreFilled" class="more-options-btn" />
+                <el-button text :icon="MoreFilled" class="more-options-btn"/>
                 <template #dropdown>
                   <el-dropdown-menu>
                     <el-dropdown-item @click="handleEdit(pool)" :icon="Edit">编辑</el-dropdown-item>
-                    <el-dropdown-item @click="handleDelete(pool.id)" :icon="Delete" class="delete-item">删除</el-dropdown-item>
+                    <el-dropdown-item @click="handleDelete(pool.id)" :icon="Delete" class="delete-item">删除
+                    </el-dropdown-item>
                   </el-dropdown-menu>
                 </template>
               </el-dropdown>
@@ -30,18 +33,26 @@
 
           <div class="card-content">
             <div class="info-item">
-              <el-icon><Link /></el-icon>
+              <el-icon>
+                <Link/>
+              </el-icon>
               <span><strong>Endpoint:</strong> {{ pool.endpoint }}</span>
             </div>
             <div class="info-item">
-              <el-icon><Location /></el-icon>
+              <el-icon>
+                <Location/>
+              </el-icon>
               <span><strong>地址:</strong> {{ pool.address || '未设置' }}</span>
             </div>
             <div class="info-item">
-              <el-icon><Odometer /></el-icon>
-              <span><strong>延迟:</strong> {{ pool.latency === undefined || pool.latency === null ? '未测试' : pool.latency >= 0 ? `${pool.latency}ms` : '超时' }}</span>
+              <el-icon>
+                <Odometer/>
+              </el-icon>
+              <span><strong>延迟:</strong> {{
+                  pool.latency === undefined || pool.latency === null ? '未测试' : pool.latency >= 0 ? `${pool.latency}ms` : '超时'
+                }}</span>
             </div>
-            <el-divider />
+            <el-divider/>
             <div class="stats-grid">
               <div class="stat-item">
                 <span class="stat-value">{{ pool.monitoringIntervalTime }}</span>
@@ -61,41 +72,41 @@
           <template #footer>
             <div class="card-footer">
               <el-button
-                class="test-latency-btn"
-                @click="handleTestLatency(pool)"
-                :icon="Odometer"
-                type="warning"
-                plain
-                round
-                :loading="latencyTesting[pool.id]"
+                  class="test-latency-btn"
+                  @click="handleTestLatency(pool)"
+                  :icon="Odometer"
+                  type="warning"
+                  plain
+                  round
+                  :loading="latencyTesting[pool.id]"
               >
                 延迟测试
               </el-button>
               <el-button
-                class="view-channels-btn"
-                @click="handleViewChannels(pool)"
-                :icon="View"
-                type="primary"
-                plain
-                round
+                  class="view-channels-btn"
+                  @click="handleViewChannels(pool)"
+                  :icon="View"
+                  type="primary"
+                  plain
+                  round
               >
                 管理渠道
               </el-button>
               <el-button
-                @click="handleShowStatistics(pool.id)"
-                :icon="DataLine"
-                type="info"
-                plain
-                round
+                  @click="handleShowStatistics(pool.id)"
+                  :icon="DataLine"
+                  type="info"
+                  plain
+                  round
               >
                 统计信息
               </el-button>
               <el-button
-                @click="handleShowErrorLogs(pool.id)"
-                :icon="Warning"
-                type="danger"
-                plain
-                round
+                  @click="handleShowErrorLogs(pool.id)"
+                  :icon="Warning"
+                  type="danger"
+                  plain
+                  round
               >
                 错误日志
               </el-button>
@@ -109,28 +120,28 @@
     <el-dialog v-model="dialogVisible" :title="dialogTitle" width="500px" custom-class="form-dialog">
       <el-form :model="form" ref="formRef" label-width="120px">
         <el-form-item label="名称" prop="name" required>
-          <el-input v-model="form.name" />
+          <el-input v-model="form.name"/>
         </el-form-item>
         <el-form-item label="Endpoint" prop="endpoint" required>
-          <el-input v-model="form.endpoint" />
+          <el-input v-model="form.endpoint"/>
         </el-form-item>
         <el-form-item label="用户名" prop="username" required>
-          <el-input v-model="form.username" />
+          <el-input v-model="form.username"/>
         </el-form-item>
         <el-form-item label="密码" prop="password" :required="!form.id">
-          <el-input v-model="form.password" type="password" show-password placeholder="不修改请留空" />
+          <el-input v-model="form.password" type="password" show-password placeholder="不修改请留空"/>
         </el-form-item>
         <el-form-item label="地址" prop="address">
-          <el-input v-model="form.address" />
+          <el-input v-model="form.address"/>
         </el-form-item>
         <el-form-item label="监控间隔(分)" prop="monitoringIntervalTime">
-          <el-input-number v-model="form.monitoringIntervalTime" :min="1" placeholder="例如: 5" />
+          <el-input-number v-model="form.monitoringIntervalTime" :min="1" placeholder="例如: 5"/>
         </el-form-item>
         <el-form-item label="最小激活数" prop="minActiveChannels">
-          <el-input-number v-model="form.minActiveChannels" :min="1" placeholder="例如: 1" />
+          <el-input-number v-model="form.minActiveChannels" :min="1" placeholder="例如: 1"/>
         </el-form-item>
         <el-form-item label="最大监控重试" prop="maxMonitorRetries">
-          <el-input-number v-model="form.maxMonitorRetries" :min="0" placeholder="例如: 5" />
+          <el-input-number v-model="form.maxMonitorRetries" :min="0" placeholder="例如: 5"/>
         </el-form-item>
       </el-form>
       <template #footer>
@@ -139,17 +150,17 @@
       </template>
     </el-dialog>
 
-    <ChannelDetailDialog v-model:visible="channelDialogVisible" :poolId="currentPoolId" />
+    <ChannelDetailDialog v-model:visible="channelDialogVisible" :poolId="currentPoolId"/>
 
     <el-dialog v-model="statisticsDialogVisible" title="号池统计信息" width="600px">
       <div v-if="currentStatistics">
         <h3>账号添加统计</h3>
         <el-table :data="[currentStatistics.accountStats]">
-          <el-table-column prop="today" label="今日" />
-          <el-table-column prop="yesterday" label="昨日" />
-          <el-table-column prop="thisWeek" label="本周" />
-          <el-table-column prop="thisMonth" label="本月" />
-          <el-table-column prop="total" label="共计" />
+          <el-table-column prop="today" label="今日"/>
+          <el-table-column prop="yesterday" label="昨日"/>
+          <el-table-column prop="thisWeek" label="本周"/>
+          <el-table-column prop="thisMonth" label="本月"/>
+          <el-table-column prop="total" label="共计"/>
         </el-table>
       </div>
       <template #footer>
@@ -159,9 +170,9 @@
 
     <el-dialog v-model="errorLogDialogVisible" title="错误日志" width="1200px">
       <el-table :data="currentErrorLogs" height="800" empty-text="暂无错误日志">
-        <el-table-column prop="channelName" label="渠道名称" width="150" />
-        <el-table-column prop="errorMessage" label="错误信息" />
-        <el-table-column prop="createdAt" label="时间" width="180"   :formatter="formatTimestamp"/>
+        <el-table-column prop="channelName" label="渠道名称" width="150"/>
+        <el-table-column prop="errorMessage" label="错误信息"/>
+        <el-table-column prop="createdAt" label="时间" width="180" :formatter="formatTimestamp"/>
       </el-table>
       <template #footer>
         <el-button @click="errorLogDialogVisible = false">关闭</el-button>
@@ -173,7 +184,7 @@
         title="批量全号池新增渠道"
         width="60%"
         :close-on-click-modal="false"
-         custom-class="form-dialog"
+        custom-class="form-dialog"
     >
       <el-form
           v-if="batchChannelForm"
@@ -181,53 +192,55 @@
           label-width="120px"
       >
         <el-form-item label="名称" required>
-          <el-input v-model="batchChannelForm.name" placeholder="请输入渠道名称" />
+          <el-input v-model="batchChannelForm.name" placeholder="请输入渠道名称"/>
         </el-form-item>
         <el-form-item label="类型">
-        <el-select v-model="batchChannelForm.type" placeholder="请选择类型">
-          <el-option v-for="(name, code) in channelTypeMap" :key="code" :label="name" :value="Number(code)" />
-        </el-select>
-      </el-form-item>
+          <el-select v-model="batchChannelForm.type" placeholder="请选择类型">
+            <el-option v-for="(name, code) in channelTypeMap" :key="code" :label="name" :value="Number(code)"/>
+          </el-select>
+        </el-form-item>
         <el-form-item label="分组">
-          <el-input v-model="batchChannelForm.group" placeholder="请输入分组名称, e.g. default" />
+          <el-input v-model="batchChannelForm.group" placeholder="请输入分组名称, e.g. default"/>
         </el-form-item>
         <el-form-item label="密钥" required>
-          <el-input v-model="batchChannelForm.key" type="textarea" :rows="8" show-password placeholder="请输入渠道密钥" />
+          <el-input v-model="batchChannelForm.key" type="textarea" :rows="8" show-password
+                    placeholder="请输入渠道密钥"/>
         </el-form-item>
         <el-form-item label="基础URL">
-          <el-input v-model="batchChannelForm.baseUrl" placeholder="e.g. https://api.openai.com" />
+          <el-input v-model="batchChannelForm.baseUrl" placeholder="e.g. https://api.openai.com"/>
         </el-form-item>
         <el-form-item label="支持的模型">
-          <el-input v-model="batchChannelForm.models" placeholder="逗号分隔, e.g. gpt-3.5-turbo,gpt-4" />
+          <el-input v-model="batchChannelForm.models" placeholder="逗号分隔, e.g. gpt-3.5-turbo,gpt-4"/>
         </el-form-item>
         <el-form-item label="优先级">
-          <el-input-number v-model="batchChannelForm.priority" :min="0" />
+          <el-input-number v-model="batchChannelForm.priority" :min="0"/>
         </el-form-item>
         <el-form-item label="权重">
-          <el-input-number v-model="batchChannelForm.weight" :min="0" />
+          <el-input-number v-model="batchChannelForm.weight" :min="0"/>
         </el-form-item>
         <el-form-item label="自动封禁">
-          <el-switch v-model="batchChannelForm.autoBan" :active-value="1" :inactive-value="0" />
+          <el-switch v-model="batchChannelForm.autoBan" :active-value="1" :inactive-value="0"/>
         </el-form-item>
         <el-form-item label="标签">
-          <el-input v-model="batchChannelForm.tag" placeholder="请输入渠道标签" />
+          <el-input v-model="batchChannelForm.tag" placeholder="请输入渠道标签"/>
         </el-form-item>
         <el-form-item label="设置信息">
-          <el-input v-model="batchChannelForm.setting" type="textarea" :rows="3" placeholder="JSON格式的设置信息" />
+          <el-input v-model="batchChannelForm.setting" type="textarea" :rows="3" placeholder="JSON格式的设置信息"/>
         </el-form-item>
         <el-form-item label="参数覆盖">
-          <el-input v-model="batchChannelForm.paramOverride" type="textarea" :rows="3" placeholder="JSON格式的参数覆盖信息" />
+          <el-input v-model="batchChannelForm.paramOverride" type="textarea" :rows="3"
+                    placeholder="JSON格式的参数覆盖信息"/>
         </el-form-item>
         <el-form-item label="部署地区">
-          <el-input v-model="batchChannelForm.other" type="textarea" :rows="3" placeholder="部署地区" />
+          <el-input v-model="batchChannelForm.other" type="textarea" :rows="3" placeholder="部署地区"/>
         </el-form-item>
         <el-form-item label="代理设置">
           <el-select v-model="batchChannelForm.proxy" placeholder="请选择类型">
-            <el-option v-for="(name, code) in proxyTypeMap" :key="code" :label="name" :value="Number(code)" />
+            <el-option v-for="(name, code) in proxyTypeMap" :key="code" :label="name" :value="Number(code)"/>
           </el-select>
         </el-form-item>
         <el-form-item label="其他附加信息">
-          <el-input v-model="batchChannelForm.otherInfo" type="textarea" :rows="2" placeholder="其他附加信息" />
+          <el-input v-model="batchChannelForm.otherInfo" type="textarea" :rows="2" placeholder="其他附加信息"/>
         </el-form-item>
       </el-form>
       <template #footer>
@@ -242,7 +255,7 @@
         title="批量新增渠道结果"
         width="600px"
         :close-on-click-modal="false"
-         custom-class="form-dialog"
+        custom-class="form-dialog"
     >
       <div style="margin-bottom: 16px;">
         共计 {{ totalCount }} 条渠道，成功 {{ successCount }} 条，失败 {{ failCount }} 条
@@ -262,7 +275,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, computed } from 'vue';
+import {ref, onMounted, computed} from 'vue';
 import {
   getPoolList,
   addPool,
@@ -273,11 +286,37 @@ import {
   getPoolStatistics,
   getErrorLogs
 } from '@/api/pool';
-import type { PoolEntity, Channel } from '@/types';
-import { ElMessage, ElMessageBox } from 'element-plus';
-import { Plus, Ticket, MoreFilled, View, Loading, Link, Location, Edit, Delete, Odometer, DataLine, Warning } from '@element-plus/icons-vue';
+import type {PoolEntity, Channel} from '@/types';
+import {ElMessage, ElMessageBox} from 'element-plus';
+import {
+  Plus,
+  Ticket,
+  MoreFilled,
+  View,
+  Loading,
+  Link,
+  Location,
+  Edit,
+  Delete,
+  Odometer,
+  DataLine,
+  Warning
+} from '@element-plus/icons-vue';
 import ChannelDetailDialog from '@/components/ChannelDetailDialog.vue';
-import { channelTypeMap, proxyTypeMap } from "@/utils/maps.ts";
+import {channelTypeMap, proxyTypeMap} from "@/utils/maps.ts";
+
+
+interface AccountStats {
+  today: number;
+  yesterday: number;
+  thisWeek: number;
+  thisMonth: number;
+  total: number;
+}
+interface PoolStatistics {
+  accountStats: AccountStats;
+}
+
 
 const pools = ref<PoolEntity[]>([]);
 const loading = ref(false);
@@ -285,7 +324,7 @@ const latencyTesting = ref<{ [key: number]: boolean }>({});
 const dialogVisible = ref(false);
 const dialogTitle = ref('');
 const statisticsDialogVisible = ref(false);
-const currentStatistics = ref(null);
+const currentStatistics = ref<PoolStatistics | null>(null);
 const errorLogDialogVisible = ref(false);
 const currentErrorLogs = ref<any[]>([]);
 const form = ref<Partial<PoolEntity>>({});
@@ -340,7 +379,7 @@ const defaultPool: Partial<PoolEntity> = {
 };
 
 const handleBatchAddChannel = () => {
-  batchChannelForm.value = { ...defaultChannel };
+  batchChannelForm.value = {...defaultChannel};
   batchAddDialogVisible.value = true;
 };
 
@@ -371,12 +410,11 @@ const handleBatchSubmit = async () => {
 };
 
 
-
 const fetchPools = async () => {
   loading.value = true;
   try {
     pools.value = await getPoolList();
-  } catch(e) {
+  } catch (e) {
     console.error(e)
   } finally {
     loading.value = false;
@@ -386,13 +424,13 @@ const fetchPools = async () => {
 onMounted(fetchPools);
 
 const handleAdd = () => {
-  form.value = { ...defaultPool };
+  form.value = {...defaultPool};
   dialogTitle.value = '新增号池';
   dialogVisible.value = true;
 };
 
 const handleEdit = (row: PoolEntity) => {
-  form.value = { ...row };
+  form.value = {...row};
   dialogTitle.value = '编辑号池';
   dialogVisible.value = true;
 };
@@ -419,7 +457,8 @@ const handleDelete = (id: number) => {
     await deletePool(id);
     ElMessage.success('删除成功');
     fetchPools();
-  }).catch(() => {});
+  }).catch(() => {
+  });
 };
 
 const handleViewChannels = (row: PoolEntity) => {
@@ -427,7 +466,7 @@ const handleViewChannels = (row: PoolEntity) => {
   channelDialogVisible.value = true;
 }
 
-const handleShowStatistics = async (poolId) => {
+const handleShowStatistics = async (poolId: number) => {
   try {
     const stats = await getPoolStatistics(poolId);
     currentStatistics.value = stats;
@@ -437,7 +476,7 @@ const handleShowStatistics = async (poolId) => {
   }
 };
 
-const handleShowErrorLogs = async (poolId) => {
+const handleShowErrorLogs = async (poolId: number) => {
   try {
     const stats = await getErrorLogs(poolId);
     console.log(stats)
@@ -487,20 +526,25 @@ function formatTimestamp(row: any) {
   --el-dialog-bg-color: var(--el-color-white);
   border-radius: 10px;
 }
+
 .form-dialog .el-dialog__title {
   color: var(--el-text-color-primary);
 }
+
 .form-dialog .el-form-item__label {
   color: var(--el-text-color-regular);
 }
+
 .form-dialog .el-input__wrapper, .form-dialog .el-textarea__inner {
   background-color: var(--el-color-white) !important;
-  box-shadow: 0 0 0 1px var(--el-input-border-color,var(--el-border-color)) inset !important;
+  box-shadow: 0 0 0 1px var(--el-input-border-color, var(--el-border-color)) inset !important;
   color: var(--el-text-color-primary);
 }
+
 .form-dialog .el-input__inner::placeholder {
   color: var(--el-text-color-placeholder);
 }
+
 .form-dialog .el-dialog__body {
   padding-top: 10px;
   padding-bottom: 10px;
@@ -526,8 +570,9 @@ function formatTimestamp(row: any) {
   height: 300px;
   color: #5f99be;
 }
+
 .loading-state .el-icon {
-    margin-bottom: 10px;
+  margin-bottom: 10px;
 }
 
 .pool-card {
@@ -565,6 +610,7 @@ function formatTimestamp(row: any) {
 .more-options-btn {
   color: #8cb4d2;
 }
+
 .more-options-btn:hover {
   color: #007bff;
   background-color: rgba(0, 123, 255, 0.05);
@@ -573,9 +619,10 @@ function formatTimestamp(row: any) {
 .delete-item {
   color: var(--el-color-danger);
 }
+
 .delete-item:hover {
-    background-color: var(--el-color-danger-light-9);
-    color: var(--el-color-danger);
+  background-color: var(--el-color-danger-light-9);
+  color: var(--el-color-danger);
 }
 
 .card-content {
@@ -589,10 +636,12 @@ function formatTimestamp(row: any) {
   margin-bottom: 12px;
   color: #5a788a;
 }
+
 .info-item .el-icon {
   font-size: 16px;
   color: #8cb4d2;
 }
+
 .info-item strong {
   color: #304455;
   margin-right: 5px;
@@ -633,11 +682,11 @@ function formatTimestamp(row: any) {
 }
 
 .test-latency-btn {
-    width: 100%;
+  width: 100%;
 }
 
 .card-footer {
-    display: flex;
-    gap: 10px;
+  display: flex;
+  gap: 10px;
 }
 </style>
