@@ -1,6 +1,30 @@
 import { createRouter, createWebHistory } from 'vue-router';
 import Layout from '@/layout/Index.vue';
 
+// 导入token管理函数
+function getToken(): string | null {
+    try {
+        const token = sessionStorage.getItem('auth_token');
+        const expiry = sessionStorage.getItem('auth_token_expiry');
+        
+        if (!token || !expiry) {
+            return null;
+        }
+        
+        // 检查token是否过期
+        if (Date.now() > parseInt(expiry)) {
+            sessionStorage.removeItem('auth_token');
+            sessionStorage.removeItem('auth_token_expiry');
+            return null;
+        }
+        
+        return token;
+    } catch (error) {
+        console.error('Error getting token:', error);
+        return null;
+    }
+}
+
 const routes = [
     {
         path: '/index.html',
@@ -47,7 +71,7 @@ const router = createRouter({
 
 
 router.beforeEach((to, _from, next): void => {
-    const token = localStorage.getItem('authToken');
+    const token = getToken(); // 使用安全的token获取函数
     if (to.meta.isPublic || token) {
         next();
     } else {

@@ -1,6 +1,7 @@
 package com.fufu.apipool.service.impl;
 
 import cn.dev33.satoken.stp.StpUtil;
+import com.fufu.apipool.common.exception.AuthenticationException;
 import com.fufu.apipool.entity.AccountEntity;
 import com.fufu.apipool.mapper.AccountMapper;
 import com.fufu.apipool.service.AccountService;
@@ -33,22 +34,30 @@ public class AccountServiceImpl implements AccountService {
      */
     @Override
     public String login(String username, String password) {
+        // 输入参数验证
+        if (username == null || username.trim().isEmpty()) {
+            throw AuthenticationException.invalidCredentials();
+        }
+        if (password == null || password.isEmpty()) {
+            throw AuthenticationException.invalidCredentials();
+        }
+        
         // 1. 根据用户名查询用户
         AccountEntity account = accountMapper.selectByUsername(username);
         if (account == null) {
-            throw new RuntimeException("用户名或密码错误");
+            throw AuthenticationException.invalidCredentials(); // 统一错误信息，不透露具体原因
         }
 
         // 2. 验证密码
         // 使用 passwordEncoder.matches() 方法进行比对
         // 第一个参数是明文密码，第二个参数是数据库中存储的加密密码
         if (!passwordEncoder.matches(password, account.getPassword())) {
-            throw new RuntimeException("用户名或密码错误");
+            throw AuthenticationException.invalidCredentials(); // 统一错误信息
         }
 
         // 3. 检查账号状态
         if (account.getStatus() != 1) {
-            throw new RuntimeException("账号已被禁用");
+            throw AuthenticationException.accountDisabled();
         }
 
         // 4. 登录！
@@ -96,10 +105,22 @@ public class AccountServiceImpl implements AccountService {
      */
     @Override
     public int update(AccountEntity accountEntity) {
-        if (accountEntity.getPassword() != null && !accountEntity.getPassword().isEmpty()) {
-            accountEntity.setPassword(passwordEncoder.encode(accountEntity.getPassword()));
+        // 安全的密码更新逻辑
+        if (accountEntity.getPassword() != null && !accountEntity.getPassword().trim().isEmpty()) {
+            // 检查新密码是否与原密码相同（避免不必要的加密）
+            AccountEntity existingAccount = accountMapper.selectById(accountEntity.getId());
+            if (existingAccount != null && !passwordEncoder.matches(accountEntity.getPassword(), existingAccount.getPassword())) {
+                accountEntity.setPassword(passwordEncoder.encode(accountEntity.getPassword()));
+            } else if (existingAccount != null) {
+                // 密码相同，保持不变
+                accountEntity.setPassword(existingAccount.getPassword());
+            }
         } else {
-            accountEntity.setPassword(null);
+            // 密码为空或空字符串时，保持原密码不变
+            AccountEntity existingAccount = accountMapper.selectById(accountEntity.getId());
+            if (existingAccount != null) {
+                accountEntity.setPassword(existingAccount.getPassword());
+            }
         }
         return accountMapper.update(accountEntity);
     }

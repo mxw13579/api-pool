@@ -26,7 +26,7 @@
 import { ref } from 'vue';
 import { useRouter } from 'vue-router';
 // 假设你有一个封装好的axios实例
-import request from '@/api/index';
+import request, { setToken } from '@/api/index';
 
 const username = ref('admin');
 const password = ref('admin');
@@ -44,7 +44,7 @@ const handleLogin = async () => {
     });
     const token = res.data.token;
     if (token) {
-      localStorage.setItem('authToken', token);
+      setToken(token); // 使用安全的token设置函数
       router.push('/');
     } else {
       error.value = '登录成功，但未能获取到Token。';

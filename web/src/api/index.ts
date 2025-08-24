@@ -7,6 +7,69 @@ const service = axios.create({
     withCredentials: true, // 允许跨域请求携带 cookie
 });
 
+// 添加请求拦截器，自动添加token
+service.interceptors.request.use(
+    config => {
+        const token = getToken();
+        if (token) {
+            config.headers['satoken'] = token; // sa-token默认的token头名称
+        }
+        return config;
+    },
+    error => {
+        console.error('Request Error:', error);
+        return Promise.reject(error);
+    }
+);
+
+// Token管理工具函数
+const TOKEN_KEY = 'auth_token';
+const TOKEN_EXPIRY_KEY = 'auth_token_expiry';
+
+// 获取Token
+function getToken(): string | null {
+    try {
+        const token = sessionStorage.getItem(TOKEN_KEY);
+        const expiry = sessionStorage.getItem(TOKEN_EXPIRY_KEY);
+        
+        if (!token || !expiry) {
+            return null;
+        }
+        
+        // 检查token是否过期
+        if (Date.now() > parseInt(expiry)) {
+            removeToken();
+            return null;
+        }
+        
+        return token;
+    } catch (error) {
+        console.error('Error getting token:', error);
+        return null;
+    }
+}
+
+// 设置Token (默认24小时过期)
+export function setToken(token: string, expiryHours: number = 24): void {
+    try {
+        const expiry = Date.now() + (expiryHours * 60 * 60 * 1000);
+        sessionStorage.setItem(TOKEN_KEY, token);
+        sessionStorage.setItem(TOKEN_EXPIRY_KEY, expiry.toString());
+    } catch (error) {
+        console.error('Error setting token:', error);
+    }
+}
+
+// 移除Token
+export function removeToken(): void {
+    try {
+        sessionStorage.removeItem(TOKEN_KEY);
+        sessionStorage.removeItem(TOKEN_EXPIRY_KEY);
+    } catch (error) {
+        console.error('Error removing token:', error);
+    }
+}
+
 service.interceptors.response.use(
     (response: AxiosResponse) => {
         const res = response.data;
@@ -16,7 +79,7 @@ service.interceptors.response.use(
             // 如果是 401 (Token 失效或未登录)
             if (res.code == 401) {
                 ElMessage.warning(res.msg || '登录已过期，请重新登录');
-                localStorage.removeItem('authToken');
+                removeToken(); // 使用安全的token移除函数
                 // 延迟跳转，让用户能看到提示信息
                 setTimeout(() => {
                     window.location.href = '/login';

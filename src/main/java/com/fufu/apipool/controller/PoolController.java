@@ -10,6 +10,7 @@ import com.fufu.apipool.service.PoolService;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.bind.annotation.*;
+import jakarta.validation.Valid;
 
 import java.util.List;
 import java.util.Map;
@@ -45,7 +46,7 @@ public class PoolController {
      * @return Result对象，包含操作结果
      */
     @PostMapping("/batchAddChannelToAll")
-    public Result<List<String>> batchAddChannelToAll(@RequestBody ChannelDTO dto) {
+    public Result<List<String>> batchAddChannelToAll(@Valid @RequestBody ChannelDTO dto) {
         return ResultUtil.getSuccessResult(poolService.batchAddChannelToAll(dto));
     }
 
@@ -67,7 +68,7 @@ public class PoolController {
      * @return Result对象，包含添加结果
      */
     @PostMapping("/addChannelsByPoolId/{poolId}")
-    public Result<Boolean> addChannelByPoolId(@PathVariable("poolId") Long poolId,@RequestBody ChannelDTO dto) {
+    public Result<Boolean> addChannelByPoolId(@PathVariable("poolId") Long poolId, @Valid @RequestBody ChannelDTO dto) {
         return ResultUtil.getSuccessResult(poolService.addChannelByPoolId(poolId,dto));
     }
 
@@ -78,7 +79,7 @@ public class PoolController {
      * @return Result对象，包含更新结果
      */
     @PutMapping("/updateChannelByPoolId/{poolId}")
-    public Result<Boolean> updateChannelByPoolId(@PathVariable("poolId") Long poolId,@RequestBody Channel channel) {
+    public Result<Boolean> updateChannelByPoolId(@PathVariable("poolId") Long poolId, @Valid @RequestBody Channel channel) {
         return ResultUtil.getSuccessResult(poolService.updateChannelByPoolId(poolId,channel));
     }
 
@@ -133,7 +134,7 @@ public class PoolController {
      * @return Result对象，包含插入行数
      */
     @PostMapping("/add")
-    public Result<Integer> add(@RequestBody PoolEntity poolEntity) {
+    public Result<Integer> add(@Valid @RequestBody PoolEntity poolEntity) {
         int count = poolService.insert(poolEntity);
         return ResultUtil.getSuccessResult(count);
     }
@@ -145,7 +146,7 @@ public class PoolController {
      * @return Result对象，包含更新行数
      */
     @PutMapping("/update")
-    public Result<Integer> update(@RequestBody PoolEntity poolEntity) {
+    public Result<Integer> update(@Valid @RequestBody PoolEntity poolEntity) {
         int count = poolService.update(poolEntity);
         return ResultUtil.getSuccessResult(count);
     }

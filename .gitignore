@@ -31,3 +31,9 @@ build/
 
 ### VS Code ###
 .vscode/
+/web/node_modules/
+/.bmad-core/
+/.claude/
+/.idea/
+/data/
+/web/package-lock.json
