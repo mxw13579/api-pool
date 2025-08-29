@@ -2,6 +2,13 @@
 
 ## 变更记录 (Changelog)
 
+### 2025-08-27 02:12:51
+- 完成项目架构全面扫描和上下文初始化
+- 更新模块结构图，增强导航体系
+- 完善后端模块文档，包含控制器、服务层、数据访问层详情
+- 添加前端模块文档，涵盖路由、组件、API接口封装
+- 建立完整的AI协作指引和开发规范
+
 ### 2025-08-24 23:51:47
 - 初始化AI上下文，完善项目架构文档
 - 生成模块结构图和导航体系
@@ -39,16 +46,16 @@ graph TD
     C --> K["router 路由配置"];
     C --> L["components 通用组件"];
     
-    click B "./src/main/java/com/fufu/apipool/" "查看后端核心模块"
-    click C "./web/" "查看前端模块"
+    click B "./src/main/java/com/fufu/apipool/CLAUDE.md" "查看后端核心模块"
+    click C "./web/CLAUDE.md" "查看前端模块"
 ```
 
 ## 模块索引
 
-| 模块名称 | 路径 | 职责描述 | 主要技术 |
-|---------|------|---------|---------|
-| **backend-core** | `./` | Spring Boot后端核心，提供RESTful API服务 | Spring Boot, MyBatis, SQLite |
-| **frontend-webapp** | `./web/` | Vue.js前端应用，提供管理界面 | Vue3, Element Plus, TypeScript |
+| 模块名称 | 路径 | 职责描述 | 主要技术 | 覆盖率 |
+|---------|------|---------|---------|--------|
+| **backend-core** | `./src/main/java/com/fufu/apipool/` | Spring Boot后端核心，提供RESTful API服务 | Spring Boot, MyBatis, SQLite, sa-token | 90% |
+| **frontend-webapp** | `./web/` | Vue.js前端应用，提供管理界面 | Vue3, Element Plus, TypeScript, Vite | 85% |
 
 ## 运行与开发
 
@@ -92,6 +99,7 @@ npm run dev
 ### 后端测试
 - 单元测试：基于JUnit 5，测试覆盖服务层和工具类
 - 集成测试：Spring Boot Test，测试完整的API调用链路
+- 现有测试：`ApiPoolApplicationTests` - HTTP客户端集成测试
 
 ```bash
 mvn test
@@ -109,12 +117,14 @@ mvn test
 - 使用Lombok简化实体类代码
 - 控制器层统一使用Result包装返回结果
 - 服务层方法需要事务注解和异常处理
+- 数据层使用MyBatis XML映射文件
 
 ### 前端规范
 - 遵循Vue.js官方风格指南
 - 使用TypeScript增强类型安全
 - 组件命名采用PascalCase
 - API接口统一封装在api目录下
+- 使用Element Plus UI组件库
 
 ## AI使用指引
 
@@ -122,14 +132,17 @@ mvn test
 1. **保持现有架构**：不轻易改变Spring Boot和Vue.js的基础架构
 2. **渐进式改进**：优先修复bug和性能优化，而非大规模重构
 3. **测试优先**：新增功能必须包含对应的测试用例
+4. **安全第一**：涉及认证授权的修改需特别谨慎
 
 ### 常见任务指引
 - **新增API接口**：参考`PoolController`的实现方式
 - **新增前端页面**：参考`views/pool/Index.vue`的结构
 - **数据库操作**：使用MyBatis XML映射，参考`mapper/*.xml`文件
 - **权限控制**：基于sa-token，参考`SaTokenConfig`配置
+- **状态管理**：前端使用组合式API进行状态管理
 
 ### 禁止操作
 - 删除或移动现有的数据库文件
 - 修改Maven或npm的核心依赖版本（除非明确需要升级）
 - 更改项目的基础目录结构
+- 修改sa-token的核心配置除非有明确需求

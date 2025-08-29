@@ -1,10 +1,22 @@
 <template>
-  <div class="pool-management-container">
+  <div class="pool-management-container page-container">
+    <!-- 头部工具栏 -->
     <div class="header-toolbar">
-      <el-button type="primary" @click="handleAdd" :icon="Plus" size="large">新增号池</el-button>
-      <el-button type="success" @click="handleBatchAddChannel" :icon="Ticket" size="large">批量新增渠道</el-button>
+      <div class="page-title">
+        <h1>号池管理</h1>
+        <p class="subtitle">统一管理API服务池，实时监控运行状态</p>
+      </div>
+      <div class="toolbar-actions">
+        <el-button type="primary" @click="handleAdd" :icon="Plus" size="large">
+          新增号池
+        </el-button>
+        <el-button type="success" @click="handleBatchAddChannel" :icon="Ticket" size="large">
+          批量新增渠道
+        </el-button>
+      </div>
     </div>
 
+    <!-- 加载状态 -->
     <div v-if="loading" class="loading-state">
       <el-icon class="is-loading" size="40">
         <Loading/>
@@ -12,270 +24,65 @@
       <p>正在加载号池数据...</p>
     </div>
 
-    <el-row :gutter="24" v-else class="pool-grid">
-      <el-col :xs="24" :sm="12" :md="8" v-for="pool in pools" :key="pool.id">
-        <el-card class="pool-card" shadow="always">
-          <template #header>
-            <div class="card-header">
-              <span class="pool-name">{{ pool.name }}</span>
-              <el-dropdown trigger="click">
-                <el-button text :icon="MoreFilled" class="more-options-btn"/>
-                <template #dropdown>
-                  <el-dropdown-menu>
-                    <el-dropdown-item @click="handleEdit(pool)" :icon="Edit">编辑</el-dropdown-item>
-                    <el-dropdown-item @click="handleDelete(pool.id)" :icon="Delete" class="delete-item">删除
-                    </el-dropdown-item>
-                  </el-dropdown-menu>
-                </template>
-              </el-dropdown>
-            </div>
-          </template>
-
-          <div class="card-content">
-            <div class="info-item">
-              <el-icon>
-                <Link/>
-              </el-icon>
-              <span><strong>Endpoint:</strong> {{ pool.endpoint }}</span>
-            </div>
-            <div class="info-item">
-              <el-icon>
-                <Location/>
-              </el-icon>
-              <span><strong>地址:</strong> {{ pool.address || '未设置' }}</span>
-            </div>
-            <div class="info-item">
-              <el-icon>
-                <Odometer/>
-              </el-icon>
-              <span><strong>延迟:</strong> {{
-                  pool.latency === undefined || pool.latency === null ? '未测试' : pool.latency >= 0 ? `${pool.latency}ms` : '超时'
-                }}</span>
-            </div>
-            <el-divider/>
-            <div class="stats-grid">
-              <div class="stat-item">
-                <span class="stat-value">{{ pool.monitoringIntervalTime }}</span>
-                <span class="stat-label">监控间隔 (分)</span>
-              </div>
-              <div class="stat-item">
-                <span class="stat-value">{{ pool.minActiveChannels }}</span>
-                <span class="stat-label">最小激活数</span>
-              </div>
-              <div class="stat-item">
-                <span class="stat-value">{{ pool.maxMonitorRetries }}</span>
-                <span class="stat-label">最大重试</span>
-              </div>
-            </div>
-          </div>
-
-          <template #footer>
-            <div class="card-footer">
-              <el-button
-                  class="test-latency-btn"
-                  @click="handleTestLatency(pool)"
-                  :icon="Odometer"
-                  type="warning"
-                  plain
-                  round
-                  :loading="latencyTesting[pool.id]"
-              >
-                延迟测试
-              </el-button>
-              <el-button
-                  class="view-channels-btn"
-                  @click="handleViewChannels(pool)"
-                  :icon="View"
-                  type="primary"
-                  plain
-                  round
-              >
-                管理渠道
-              </el-button>
-              <el-button
-                  @click="handleShowStatistics(pool.id)"
-                  :icon="DataLine"
-                  type="info"
-                  plain
-                  round
-              >
-                统计信息
-              </el-button>
-              <el-button
-                  @click="handleShowErrorLogs(pool.id)"
-                  :icon="Warning"
-                  type="danger"
-                  plain
-                  round
-              >
-                错误日志
-              </el-button>
-            </div>
-          </template>
-        </el-card>
+    <!-- 号池网格 -->
+    <el-row :gutter="20" v-else class="pool-grid">
+      <el-col 
+        :xs="24" 
+        :sm="12" 
+        :md="12" 
+        :lg="8" 
+        :xl="6"
+        v-for="pool in pools" 
+        :key="pool.id"
+        class="pool-col"
+      >
+        <PoolCard
+          :pool="pool"
+          :is-latency-testing="latencyTesting[pool.id]"
+          @edit="handleEdit"
+          @delete="handleDelete"
+          @test-latency="handleTestLatency"
+          @view-channels="handleViewChannels"
+          @show-statistics="handleShowStatistics"
+          @show-error-logs="handleShowErrorLogs"
+        />
       </el-col>
     </el-row>
 
-    <!-- Dialogs remain unchanged -->
-    <el-dialog v-model="dialogVisible" :title="dialogTitle" width="500px" custom-class="form-dialog">
-      <el-form :model="form" ref="formRef" label-width="120px">
-        <el-form-item label="名称" prop="name" required>
-          <el-input v-model="form.name"/>
-        </el-form-item>
-        <el-form-item label="Endpoint" prop="endpoint" required>
-          <el-input v-model="form.endpoint"/>
-        </el-form-item>
-        <el-form-item label="用户名" prop="username" required>
-          <el-input v-model="form.username"/>
-        </el-form-item>
-        <el-form-item label="密码" prop="password" :required="!form.id">
-          <el-input v-model="form.password" type="password" show-password placeholder="不修改请留空"/>
-        </el-form-item>
-        <el-form-item label="地址" prop="address">
-          <el-input v-model="form.address"/>
-        </el-form-item>
-        <el-form-item label="监控间隔(分)" prop="monitoringIntervalTime">
-          <el-input-number v-model="form.monitoringIntervalTime" :min="1" placeholder="例如: 5"/>
-        </el-form-item>
-        <el-form-item label="最小激活数" prop="minActiveChannels">
-          <el-input-number v-model="form.minActiveChannels" :min="1" placeholder="例如: 1"/>
-        </el-form-item>
-        <el-form-item label="最大监控重试" prop="maxMonitorRetries">
-          <el-input-number v-model="form.maxMonitorRetries" :min="0" placeholder="例如: 5"/>
-        </el-form-item>
-      </el-form>
-      <template #footer>
-        <el-button @click="dialogVisible = false">取消</el-button>
-        <el-button type="primary" @click="handleSubmit">确定</el-button>
-      </template>
-    </el-dialog>
+    <!-- 空状态 -->
+    <el-empty
+      v-if="!loading && pools.length === 0"
+      description="暂无号池数据"
+      class="empty-state"
+    >
+      <el-button type="primary" @click="handleAdd" :icon="Plus">创建第一个号池</el-button>
+    </el-empty>
 
+    <!-- 渠道详情对话框 -->
     <ChannelDetailDialog v-model:visible="channelDialogVisible" :poolId="currentPoolId"/>
 
-    <el-dialog v-model="statisticsDialogVisible" title="号池统计信息" width="600px">
-      <div v-if="currentStatistics">
-        <h3>账号添加统计</h3>
-        <el-table :data="[currentStatistics.accountStats]">
-          <el-table-column prop="today" label="今日"/>
-          <el-table-column prop="yesterday" label="昨日"/>
-          <el-table-column prop="thisWeek" label="本周"/>
-          <el-table-column prop="thisMonth" label="本月"/>
-          <el-table-column prop="total" label="共计"/>
-        </el-table>
-      </div>
-      <template #footer>
-        <el-button @click="statisticsDialogVisible = false">关闭</el-button>
-      </template>
-    </el-dialog>
-
-    <el-dialog v-model="errorLogDialogVisible" title="错误日志" width="1200px">
-      <el-table :data="currentErrorLogs" height="800" empty-text="暂无错误日志">
-        <el-table-column prop="channelName" label="渠道名称" width="150"/>
-        <el-table-column prop="errorMessage" label="错误信息"/>
-        <el-table-column prop="createdAt" label="时间" width="180" :formatter="formatTimestamp"/>
-      </el-table>
-      <template #footer>
-        <el-button @click="errorLogDialogVisible = false">关闭</el-button>
-      </template>
-    </el-dialog>
-
-    <el-dialog
-        v-model="batchAddDialogVisible"
-        title="批量全号池新增渠道"
-        width="60%"
-        :close-on-click-modal="false"
-        custom-class="form-dialog"
-    >
-      <el-form
-          v-if="batchChannelForm"
-          :model="batchChannelForm"
-          label-width="120px"
-      >
-        <el-form-item label="名称" required>
-          <el-input v-model="batchChannelForm.name" placeholder="请输入渠道名称"/>
-        </el-form-item>
-        <el-form-item label="类型">
-          <el-select v-model="batchChannelForm.type" placeholder="请选择类型">
-            <el-option v-for="(name, code) in channelTypeMap" :key="code" :label="name" :value="Number(code)"/>
-          </el-select>
-        </el-form-item>
-        <el-form-item label="分组">
-          <el-input v-model="batchChannelForm.group" placeholder="请输入分组名称, e.g. default"/>
-        </el-form-item>
-        <el-form-item label="密钥" required>
-          <el-input v-model="batchChannelForm.key" type="textarea" :rows="8" show-password
-                    placeholder="请输入渠道密钥"/>
-        </el-form-item>
-        <el-form-item label="基础URL">
-          <el-input v-model="batchChannelForm.baseUrl" placeholder="e.g. https://api.openai.com"/>
-        </el-form-item>
-        <el-form-item label="支持的模型">
-          <el-input v-model="batchChannelForm.models" placeholder="逗号分隔, e.g. gpt-3.5-turbo,gpt-4"/>
-        </el-form-item>
-        <el-form-item label="优先级">
-          <el-input-number v-model="batchChannelForm.priority" :min="0"/>
-        </el-form-item>
-        <el-form-item label="权重">
-          <el-input-number v-model="batchChannelForm.weight" :min="0"/>
-        </el-form-item>
-        <el-form-item label="自动封禁">
-          <el-switch v-model="batchChannelForm.autoBan" :active-value="1" :inactive-value="0"/>
-        </el-form-item>
-        <el-form-item label="标签">
-          <el-input v-model="batchChannelForm.tag" placeholder="请输入渠道标签"/>
-        </el-form-item>
-        <el-form-item label="设置信息">
-          <el-input v-model="batchChannelForm.setting" type="textarea" :rows="3" placeholder="JSON格式的设置信息"/>
-        </el-form-item>
-        <el-form-item label="参数覆盖">
-          <el-input v-model="batchChannelForm.paramOverride" type="textarea" :rows="3"
-                    placeholder="JSON格式的参数覆盖信息"/>
-        </el-form-item>
-        <el-form-item label="部署地区">
-          <el-input v-model="batchChannelForm.other" type="textarea" :rows="3" placeholder="部署地区"/>
-        </el-form-item>
-        <el-form-item label="代理设置">
-          <el-select v-model="batchChannelForm.proxy" placeholder="请选择类型">
-            <el-option v-for="(name, code) in proxyTypeMap" :key="code" :label="name" :value="Number(code)"/>
-          </el-select>
-        </el-form-item>
-        <el-form-item label="其他附加信息">
-          <el-input v-model="batchChannelForm.otherInfo" type="textarea" :rows="2" placeholder="其他附加信息"/>
-        </el-form-item>
-      </el-form>
-      <template #footer>
-        <span class="dialog-footer">
-          <el-button @click="batchAddDialogVisible = false">取消</el-button>
-          <el-button type="primary" @click="handleBatchSubmit">确定</el-button>
-        </span>
-      </template>
-    </el-dialog>
-    <el-dialog
-        v-model="batchResultDialogVisible"
-        title="批量新增渠道结果"
-        width="600px"
-        :close-on-click-modal="false"
-        custom-class="form-dialog"
-    >
-      <div style="margin-bottom: 16px;">
-        共计 {{ totalCount }} 条渠道，成功 {{ successCount }} 条，失败 {{ failCount }} 条
-      </div>
-      <div style="max-height: 400px; overflow-y: auto;">
-        <ul>
-          <li v-for="(msg, idx) in batchResultList" :key="idx" style="margin-bottom: 8px;">
-            {{ msg }}
-          </li>
-        </ul>
-      </div>
-      <template #footer>
-        <el-button type="primary" @click="batchResultDialogVisible = false">确认</el-button>
-      </template>
-    </el-dialog>
+    <!-- 对话框管理器 -->
+    <DialogManager
+      v-model:pool-dialog-visible="dialogVisible"
+      :pool-dialog-title="dialogTitle"
+      :pool-form="form"
+      v-model:statistics-dialog-visible="statisticsDialogVisible"
+      :current-statistics="currentStatistics"
+      v-model:error-log-dialog-visible="errorLogDialogVisible"
+      :current-error-logs="currentErrorLogs"
+      v-model:batch-add-dialog-visible="batchAddDialogVisible"
+      :batch-channel-form="batchChannelForm"
+      v-model:batch-result-dialog-visible="batchResultDialogVisible"
+      :batch-result-list="batchResultList"
+      :submitting="submitting"
+      @pool-submit="handleSubmit"
+      @batch-channel-submit="handleBatchSubmit"
+    />
   </div>
 </template>
 
 <script setup lang="ts">
-import {ref, onMounted, computed} from 'vue';
+import { ref, onMounted, computed } from 'vue';
 import {
   getPoolList,
   addPool,
@@ -286,26 +93,14 @@ import {
   getPoolStatistics,
   getErrorLogs
 } from '@/api/pool';
-import type {PoolEntity, Channel} from '@/types';
-import {ElMessage, ElMessageBox} from 'element-plus';
-import {
-  Plus,
-  Ticket,
-  MoreFilled,
-  View,
-  Loading,
-  Link,
-  Location,
-  Edit,
-  Delete,
-  Odometer,
-  DataLine,
-  Warning
-} from '@element-plus/icons-vue';
+import type { PoolEntity, Channel } from '@/types';
+import { ElMessage, ElMessageBox } from 'element-plus';
+import { Plus, Ticket, Loading } from '@element-plus/icons-vue';
 import ChannelDetailDialog from '@/components/ChannelDetailDialog.vue';
-import {channelTypeMap, proxyTypeMap} from "@/utils/maps.ts";
+import PoolCard from '@/components/PoolCard.vue';
+import DialogManager from '@/components/DialogManager.vue';
 
-
+// 接口定义
 interface AccountStats {
   today: number;
   yesterday: number;
@@ -313,40 +108,50 @@ interface AccountStats {
   thisMonth: number;
   total: number;
 }
+
 interface PoolStatistics {
   accountStats: AccountStats;
 }
 
-
+// 响应式状态
 const pools = ref<PoolEntity[]>([]);
 const loading = ref(false);
+const submitting = ref(false);
 const latencyTesting = ref<{ [key: number]: boolean }>({});
+
+// 号池表单相关
 const dialogVisible = ref(false);
 const dialogTitle = ref('');
-const statisticsDialogVisible = ref(false);
-const currentStatistics = ref<PoolStatistics | null>(null);
-const errorLogDialogVisible = ref(false);
-const currentErrorLogs = ref<any[]>([]);
 const form = ref<Partial<PoolEntity>>({});
-const formRef = ref();
 
+// 渠道对话框相关
 const channelDialogVisible = ref(false);
 const currentPoolId = ref<number | null>(null);
+
+// 统计信息相关
+const statisticsDialogVisible = ref(false);
+const currentStatistics = ref<PoolStatistics | null>(null);
+
+// 错误日志相关
+const errorLogDialogVisible = ref(false);
+const currentErrorLogs = ref<any[]>([]);
+
+// 批量新增相关
+const batchAddDialogVisible = ref(false);
+const batchChannelForm = ref<Partial<Channel>>({});
 const batchResultDialogVisible = ref(false);
 const batchResultList = ref<string[]>([]);
 
+// 计算属性
 const totalCount = computed(() => batchResultList.value.length);
 const successCount = computed(() =>
-    batchResultList.value.filter(msg => msg.includes('成功')).length
+  batchResultList.value.filter(msg => msg.includes('成功')).length
 );
 const failCount = computed(() =>
-    batchResultList.value.filter(msg => msg.includes('失败') || msg.includes('异常')).length
+  batchResultList.value.filter(msg => msg.includes('失败') || msg.includes('异常')).length
 );
 
-const batchAddDialogVisible = ref(false);
-const batchChannelForm = ref<Partial<Channel>>({});
-
-
+// 默认数据
 const defaultChannel: Partial<Channel> = {
   name: '',
   type: 41,
@@ -378,93 +183,75 @@ const defaultPool: Partial<PoolEntity> = {
   maxMonitorRetries: 5,
 };
 
-const handleBatchAddChannel = () => {
-  batchChannelForm.value = {...defaultChannel};
-  batchAddDialogVisible.value = true;
-};
-
-const handleBatchSubmit = async () => {
-  if (!batchChannelForm.value.name || !batchChannelForm.value.key) {
-    ElMessage.error('渠道名称和密钥为必填项');
-    return;
-  }
-  try {
-    const res = await batchAddChannelToAll(batchChannelForm.value);
-    if (Array.isArray(res)) {
-      batchResultList.value = res;
-      batchResultDialogVisible.value = true;
-      batchAddDialogVisible.value = false;
-    } else {
-      ElMessage.error('批量新增渠道失败，返回数据格式异常');
-    }
-  } catch (error: any) {
-    if (error.response?.data?.msg) {
-      ElMessage.error(error.response.data.msg);
-    } else if (error.msg) {
-      ElMessage.error(error.msg);
-    } else {
-      ElMessage.error('批量新增渠道失败');
-    }
-    console.error(error);
-  }
-};
-
-
+// 主要方法
 const fetchPools = async () => {
   loading.value = true;
   try {
     pools.value = await getPoolList();
-  } catch (e) {
-    console.error(e)
+  } catch (error) {
+    console.error('获取号池列表失败:', error);
+    ElMessage.error('获取号池列表失败');
   } finally {
     loading.value = false;
   }
 };
 
-onMounted(fetchPools);
-
 const handleAdd = () => {
-  form.value = {...defaultPool};
+  form.value = { ...defaultPool };
   dialogTitle.value = '新增号池';
   dialogVisible.value = true;
 };
 
-const handleEdit = (row: PoolEntity) => {
-  form.value = {...row};
+const handleEdit = (pool: PoolEntity) => {
+  form.value = { ...pool };
   dialogTitle.value = '编辑号池';
   dialogVisible.value = true;
 };
 
 const handleSubmit = async () => {
+  submitting.value = true;
   try {
     const apiCall = form.value.id ? updatePool : addPool;
     await apiCall(form.value as any);
     ElMessage.success(form.value.id ? '更新成功' : '新增成功');
     dialogVisible.value = false;
-    fetchPools();
+    await fetchPools();
   } catch (error) {
+    console.error('提交失败:', error);
     ElMessage.error('操作失败');
+  } finally {
+    submitting.value = false;
   }
 };
 
-const handleDelete = (id: number) => {
-  ElMessageBox.confirm('确定要删除这个号池吗? 这将是一个不可逆转的操作。', '严重警告', {
-    confirmButtonText: '确定删除',
-    cancelButtonText: '取消',
-    type: 'warning',
-    buttonSize: 'default',
-  }).then(async () => {
-    await deletePool(id);
+const handleDelete = async (poolId: number) => {
+  try {
+    await ElMessageBox.confirm(
+      '确定要删除这个号池吗? 这将是一个不可逆转的操作。', 
+      '严重警告', 
+      {
+        confirmButtonText: '确定删除',
+        cancelButtonText: '取消',
+        type: 'warning',
+        buttonSize: 'default',
+      }
+    );
+    
+    await deletePool(poolId);
     ElMessage.success('删除成功');
-    fetchPools();
-  }).catch(() => {
-  });
+    await fetchPools();
+  } catch (error) {
+    if (error !== 'cancel') {
+      console.error('删除失败:', error);
+      ElMessage.error('删除失败');
+    }
+  }
 };
 
-const handleViewChannels = (row: PoolEntity) => {
-  currentPoolId.value = row.id;
+const handleViewChannels = (pool: PoolEntity) => {
+  currentPoolId.value = pool.id;
   channelDialogVisible.value = true;
-}
+};
 
 const handleShowStatistics = async (poolId: number) => {
   try {
@@ -472,17 +259,18 @@ const handleShowStatistics = async (poolId: number) => {
     currentStatistics.value = stats;
     statisticsDialogVisible.value = true;
   } catch (error) {
+    console.error('获取统计信息失败:', error);
     ElMessage.error('获取统计信息失败');
   }
 };
 
 const handleShowErrorLogs = async (poolId: number) => {
   try {
-    const stats = await getErrorLogs(poolId);
-    console.log(stats)
-    currentErrorLogs.value = stats || [];
+    const logs = await getErrorLogs(poolId);
+    currentErrorLogs.value = logs || [];
     errorLogDialogVisible.value = true;
   } catch (error) {
+    console.error('获取错误日志失败:', error);
     ElMessage.error('获取错误日志失败');
   }
 };
@@ -497,69 +285,79 @@ const handleTestLatency = async (pool: PoolEntity) => {
     }
     ElMessage.success(`延迟测试完成: ${latency > 0 ? `${latency}ms` : '超时'}`);
   } catch (error) {
+    console.error('延迟测试失败:', error);
     ElMessage.error('延迟测试失败');
   } finally {
     latencyTesting.value[pool.id] = false;
   }
 };
 
-/**
- * 将秒级时间戳转为 YYYY-MM-DD HH:mm:ss 格式
- */
-function formatTimestamp(row: any) {
-  if (!row.createdAt) return '';
-  const date = new Date(row.createdAt * 1000);
-  const Y = date.getFullYear();
-  const M = String(date.getMonth() + 1).padStart(2, '0');
-  const D = String(date.getDate()).padStart(2, '0');
-  const h = String(date.getHours()).padStart(2, '0');
-  const m = String(date.getMinutes()).padStart(2, '0');
-  const s = String(date.getSeconds()).padStart(2, '0');
-  return `${Y}-${M}-${D} ${h}:${m}:${s}`;
-}
+const handleBatchAddChannel = () => {
+  batchChannelForm.value = { ...defaultChannel };
+  batchAddDialogVisible.value = true;
+};
 
+const handleBatchSubmit = async () => {
+  if (!batchChannelForm.value.name || !batchChannelForm.value.key) {
+    ElMessage.error('渠道名称和密钥为必填项');
+    return;
+  }
+
+  submitting.value = true;
+  try {
+    const res = await batchAddChannelToAll(batchChannelForm.value);
+    if (Array.isArray(res)) {
+      batchResultList.value = res;
+      batchResultDialogVisible.value = true;
+      batchAddDialogVisible.value = false;
+    } else {
+      ElMessage.error('批量新增渠道失败，返回数据格式异常');
+    }
+  } catch (error: any) {
+    console.error('批量新增失败:', error);
+    const errorMessage = error.response?.data?.msg || error.msg || '批量新增渠道失败';
+    ElMessage.error(errorMessage);
+  } finally {
+    submitting.value = false;
+  }
+};
+
+// 生命周期
+onMounted(fetchPools);
 </script>
-
-<style>
-/* Reverting dialog styles to default light theme */
-.el-dialog.form-dialog {
-  --el-dialog-bg-color: var(--el-color-white);
-  border-radius: 10px;
-}
-
-.form-dialog .el-dialog__title {
-  color: var(--el-text-color-primary);
-}
-
-.form-dialog .el-form-item__label {
-  color: var(--el-text-color-regular);
-}
-
-.form-dialog .el-input__wrapper, .form-dialog .el-textarea__inner {
-  background-color: var(--el-color-white) !important;
-  box-shadow: 0 0 0 1px var(--el-input-border-color, var(--el-border-color)) inset !important;
-  color: var(--el-text-color-primary);
-}
-
-.form-dialog .el-input__inner::placeholder {
-  color: var(--el-text-color-placeholder);
-}
-
-.form-dialog .el-dialog__body {
-  padding-top: 10px;
-  padding-bottom: 10px;
-}
-</style>
 
 <style scoped>
 .pool-management-container {
-  padding: 24px;
-  background: linear-gradient(180deg, #f0f9ff 0%, #e0f2ff 100%);
   min-height: calc(100vh - 50px);
 }
 
 .header-toolbar {
-  margin-bottom: 24px;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 32px;
+  gap: 24px;
+}
+
+.page-title h1 {
+  font-size: 28px;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin: 0 0 8px 0;
+  line-height: 1.2;
+}
+
+.page-title .subtitle {
+  font-size: 14px;
+  color: var(--text-muted);
+  margin: 0;
+  font-weight: 400;
+}
+
+.toolbar-actions {
+  display: flex;
+  gap: 12px;
+  flex-shrink: 0;
 }
 
 .loading-state {
@@ -568,125 +366,150 @@ function formatTimestamp(row: any) {
   justify-content: center;
   align-items: center;
   height: 300px;
-  color: #5f99be;
-}
-
-.loading-state .el-icon {
-  margin-bottom: 10px;
-}
-
-.pool-card {
-  background: #ffffff;
-  border: 1px solid #d3eafc;
+  color: var(--text-muted);
+  background: var(--card-bg);
+  border: 1px solid var(--card-border);
   border-radius: 12px;
-  margin-bottom: 24px;
-  color: #304455;
-  transition: transform 0.2s, box-shadow 0.2s;
-  --el-card-padding: 0;
 }
 
-.pool-card:hover {
-  transform: translateY(-5px);
-  box-shadow: 0 8px 25px rgba(0, 123, 255, 0.15);
+/* 优化号池网格布局 */
+.pool-grid {
+  margin: 0 !important;
 }
 
-:deep(.el-card__header) {
-  border-bottom: 1px solid #eaf6ff;
-  padding: 16px 20px;
-}
-
-.card-header {
+.pool-col {
+  margin-bottom: 20px;
   display: flex;
-  justify-content: space-between;
-  align-items: center;
 }
 
-.pool-name {
-  font-size: 1.1rem;
-  font-weight: 600;
-  color: #005a9e;
-}
-
-.more-options-btn {
-  color: #8cb4d2;
-}
-
-.more-options-btn:hover {
-  color: #007bff;
-  background-color: rgba(0, 123, 255, 0.05);
-}
-
-.delete-item {
-  color: var(--el-color-danger);
-}
-
-.delete-item:hover {
-  background-color: var(--el-color-danger-light-9);
-  color: var(--el-color-danger);
-}
-
-.card-content {
-  padding: 20px;
-}
-
-.info-item {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  margin-bottom: 12px;
-  color: #5a788a;
-}
-
-.info-item .el-icon {
-  font-size: 16px;
-  color: #8cb4d2;
-}
-
-.info-item strong {
-  color: #304455;
-  margin-right: 5px;
-}
-
-.stats-grid {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 16px;
-  text-align: center;
-  margin-top: 16px;
-}
-
-.stat-item {
+.pool-col :deep(.pool-card) {
+  width: 100%;
+  height: 100%;
   display: flex;
   flex-direction: column;
 }
 
-.stat-value {
-  font-size: 1.5rem;
-  font-weight: bold;
-  color: #007bff;
+/* 响应式优化 */
+@media (max-width: 768px) {
+  .header-toolbar {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 16px;
+  }
+  
+  .toolbar-actions {
+    justify-content: stretch;
+  }
+  
+  .toolbar-actions .el-button {
+    flex: 1;
+  }
+  
+  .pool-col {
+    margin-bottom: 16px;
+  }
 }
 
-.stat-label {
-  font-size: 0.8rem;
-  color: #8cb4d2;
+@media (min-width: 1200px) {
+  .pool-col {
+    margin-bottom: 24px;
+  }
 }
 
-:deep(.el-card__footer) {
-  border-top: 1px solid #eaf6ff;
-  padding: 12px 20px;
-  background-color: #f8fcff;
+@media (min-width: 1600px) {
+  .pool-grid .el-col {
+    max-width: 20%; /* 5列布局 */
+    flex: 0 0 20%;
+  }
 }
 
-.view-channels-btn {
-  width: 100%;
+.loading-state .el-icon {
+  margin-bottom: 16px;
+  color: var(--accent-color);
 }
 
-.test-latency-btn {
-  width: 100%;
+.loading-state p {
+  font-size: 14px;
+  margin: 0;
 }
 
-.card-footer {
-  display: flex;
-  gap: 10px;
+.pool-grid {
+  margin-bottom: 24px;
+}
+
+.empty-state {
+  background: var(--card-bg);
+  border: 1px solid var(--card-border);
+  border-radius: 12px;
+  padding: 48px 24px;
+}
+
+.empty-state :deep(.el-empty__description) {
+  color: var(--text-muted);
+}
+
+/* 响应式设计 */
+@media (max-width: 768px) {
+  .header-toolbar {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 16px;
+  }
+  
+  .page-title {
+    text-align: center;
+  }
+  
+  .page-title h1 {
+    font-size: 24px;
+  }
+  
+  .toolbar-actions {
+    flex-direction: column;
+    gap: 8px;
+  }
+  
+  .pool-grid {
+    margin: 0 -12px;
+  }
+  
+  .pool-grid :deep(.el-col) {
+    padding: 0 12px !important;
+  }
+}
+
+@media (max-width: 480px) {
+  .page-title h1 {
+    font-size: 20px;
+  }
+  
+  .page-title .subtitle {
+    font-size: 12px;
+  }
+  
+  .pool-grid {
+    margin: 0 -8px;
+  }
+  
+  .pool-grid :deep(.el-col) {
+    padding: 0 8px !important;
+  }
+}
+
+/* 改进加载动画 */
+@keyframes pulse {
+  0% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
+  100% {
+    opacity: 1;
+  }
+}
+
+.loading-state .el-icon.is-loading {
+  animation: pulse 1.5s ease-in-out infinite;
 }
 </style>
