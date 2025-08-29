@@ -221,7 +221,7 @@ public class PoolServiceImpl implements PoolService {
         if (selectedProxy != null) {
             String proxyUrl = selectedProxy.getProxyUrl();
             //proxyUrl 如果不是 socket5开头则添加
-            if (!proxyUrl.startsWith("socks5")) {
+            if (!proxyUrl.startsWith("socks5") || !proxyUrl.startsWith("http")) {
                 proxyUrl = "socks5://" + proxyUrl;
             }
             // 格式化为JSON字符串: {"proxy":"http://user:pass@host:port"}
