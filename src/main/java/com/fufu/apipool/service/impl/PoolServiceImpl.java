@@ -83,31 +83,60 @@ public class PoolServiceImpl implements PoolService {
     private static final int DEFAULT_MIN_ACTIVE = 1;
     private static final int PING_COUNT = 5;
 
+    /**
+     * 根据ID查询号池实体
+     * @param id 号池ID
+     * @return PoolEntity 实体对象
+     */
     @Override
     public PoolEntity selectById(Long id) {
         return poolMapper.selectById(id);
     }
 
+    /**
+     * 查询所有号池
+     * @return 号池实体列表
+     */
     @Override
     public List<PoolEntity> selectAll() {
         return poolMapper.selectAll();
     }
 
+    /**
+     * 新增号池
+     * @param poolEntity 号池实体
+     * @return 插入行数
+     */
     @Override
     public int insert(PoolEntity poolEntity) {
         return poolMapper.insert(poolEntity);
     }
 
+    /**
+     * 更新号池
+     * @param poolEntity 号池实体
+     * @return 更新行数
+     */
     @Override
     public int update(PoolEntity poolEntity) {
         return poolMapper.update(poolEntity);
     }
 
+    /**
+     * 根据ID删除号池
+     * @param id 号池ID
+     * @return 删除行数
+     */
     @Override
     public int deleteById(Long id) {
         return poolMapper.deleteById(id);
     }
 
+    /**
+     * 获取指定号池下的所有渠道
+     * @param poolId 号池ID
+     * @return 渠道列表
+     */
     @Override
     public List<Channel> getChannelsByPoolId(Long poolId) {
         Map<String, Object> pathVars = new HashMap<>(4);
@@ -121,6 +150,12 @@ public class PoolServiceImpl implements PoolService {
         return data == null ? Collections.emptyList() : Optional.ofNullable(data.getItems()).orElse(Collections.emptyList());
     }
 
+    /**
+     * 更新指定号池下的渠道信息
+     * @param poolId 号池ID
+     * @param channel 渠道对象
+     * @return 是否成功
+     */
     @Override
     public Boolean updateChannelByPoolId(Long poolId, Channel channel) {
         String send = apiHttpUtil.send(poolId, ApiUrlEnum.EDIT, null, null, channel);
@@ -134,6 +169,12 @@ public class PoolServiceImpl implements PoolService {
         return true;
     }
 
+    /**
+     * 测试指定号池下渠道的可用性
+     * @param poolId 号池ID
+     * @param channelId 渠道ID
+     * @return 响应时间（毫秒）
+     */
     @Override
     public long testChannelByPoolId(Long poolId, Long channelId) {
         Map<String, Object> pathVars = new HashMap<>(4);
@@ -145,6 +186,12 @@ public class PoolServiceImpl implements PoolService {
         return r.getTime();
     }
 
+    /**
+     * 为指定号池添加渠道（带事务）
+     * @param poolId 号池ID
+     * @param dto 渠道DTO
+     * @return 是否成功
+     */
     @Override
     @Transactional
     public Boolean addChannelByPoolId(Long poolId, ChannelDTO dto) {
@@ -202,6 +249,12 @@ public class PoolServiceImpl implements PoolService {
         return true;
     }
 
+    /**
+     * 获取指定号池下的单个渠道详情
+     * @param poolId 号池ID
+     * @param channelId 渠道ID
+     * @return 渠道对象
+     */
     @Override
     public Channel getChannelByPoolId(Long poolId, Long channelId) {
         Map<String, Object> pathVars = new HashMap<>(2);
@@ -212,6 +265,12 @@ public class PoolServiceImpl implements PoolService {
         return r.getData();
     }
 
+    /**
+     * 删除指定号池下的渠道
+     * @param poolId 号池ID
+     * @param channelId 渠道ID
+     * @return 是否成功
+     */
     @Override
     public Boolean deleteChannelByPoolId(Long poolId, Long channelId) {
         Map<String, Object> pathVars = new HashMap<>(2);
@@ -223,6 +282,11 @@ public class PoolServiceImpl implements PoolService {
         return true;
     }
 
+    /**
+     * 批量为所有号池添加渠道
+     * @param dto 渠道DTO
+     * @return 添加结果列表
+     */
     @Override
     public List<String> batchAddChannelToAll(ChannelDTO dto) {
         List<PoolEntity> allPools = this.selectAll();
@@ -280,8 +344,18 @@ public class PoolServiceImpl implements PoolService {
         return ret;
     }
 
+    /**
+     * 渠道名称解析结果
+     * originalName: 原始名称
+     * retries: 重试次数
+     */
     private record NameParseResult(String originalName, int retries) {}
 
+    /**
+     * 解析渠道名称，提取原始名称和重试次数
+     * @param name 渠道名称
+     * @return 解析结果
+     */
     private NameParseResult parseChannelName(String name) {
         if (name == null) return new NameParseResult("", 0);
         Matcher failedMatcher = FAILED_PATTERN.matcher(name);
@@ -295,14 +369,36 @@ public class PoolServiceImpl implements PoolService {
         return new NameParseResult(name, 0);
     }
 
+    /**
+     * 渠道分组枚举
+     */
     private enum ChannelGroup {
-        ACTIVE, RETRYABLE, PRISTINE, PERMANENTLY_FAILED
+        ACTIVE,             // 激活
+        RETRYABLE,          // 可重试
+        PRISTINE,           // 闲置
+        PERMANENTLY_FAILED  // 永久失败
     }
 
+    /**
+     * 单次测试执行结果
+     * isSuccess: 是否成功
+     * errorMessage: 错误信息
+     */
     private record TestExecutionResult(boolean isSuccess, String errorMessage) {}
 
+    /**
+     * 渠道测试结果
+     * channel: 渠道对象
+     * isSuccess: 是否成功
+     * originalGroup: 原始分组
+     * errorMessage: 错误信息
+     */
     private record ChannelTestResult(Channel channel, boolean isSuccess, ChannelGroup originalGroup, String errorMessage) {}
 
+    /**
+     * 执行号池监控任务（核心逻辑）
+     * @param poolId 号池ID
+     */
     private void doMonitorPool(Long poolId) {
         PoolEntity pool = poolMapper.selectById(poolId);
         if (pool == null) {
@@ -358,6 +454,12 @@ public class PoolServiceImpl implements PoolService {
         processTestResults(finalResults, pool, minActive);
     }
 
+    /**
+     * 渠道分组
+     * @param channels 渠道列表
+     * @param maxRetries 最大重试次数
+     * @return 分组结果
+     */
     private Map<ChannelGroup, List<Channel>> categorizeChannels(List<Channel> channels, int maxRetries) {
         Map<ChannelGroup, List<Channel>> map = new EnumMap<>(ChannelGroup.class);
         for (Channel channel : channels) {
@@ -376,6 +478,14 @@ public class PoolServiceImpl implements PoolService {
         return map;
     }
 
+    /**
+     * 添加异步测试任务
+     * @param futures 任务列表
+     * @param channels 待测渠道
+     * @param poolId 号池ID
+     * @param group 分组
+     * @param withRetries 是否带重试
+     */
     private void addTestTasks(List<CompletableFuture<ChannelTestResult>> futures, List<Channel> channels,
                               Long poolId, ChannelGroup group, boolean withRetries) {
         if (channels == null || channels.isEmpty()) return;
@@ -397,6 +507,12 @@ public class PoolServiceImpl implements PoolService {
         }
     }
 
+    /**
+     * 处理所有测试结果，自动禁用/激活渠道
+     * @param results 测试结果
+     * @param pool 号池实体
+     * @param minActive 最小激活数
+     */
     private void processTestResults(List<ChannelTestResult> results, PoolEntity pool, int minActive) {
         if (results == null || results.isEmpty()) {
             log.info("号池[{}]: 无测试结果，监控任务结束。", pool.getName());
@@ -462,6 +578,14 @@ public class PoolServiceImpl implements PoolService {
         log.info("号池[{}]: 监控任务执行完毕。", pool.getName());
     }
 
+    /**
+     * 带重试的渠道测试
+     * @param poolId 号池ID
+     * @param channelId 渠道ID
+     * @param retries 重试次数
+     * @param delayMillis 重试间隔（毫秒）
+     * @return 测试结果
+     */
     private TestExecutionResult testChannelWithRetries(Long poolId, Long channelId, int retries, long delayMillis) {
         String lastExceptionMessage = "";
         for (int i = 0; i <= retries; i++) {
@@ -487,6 +611,11 @@ public class PoolServiceImpl implements PoolService {
         return new TestExecutionResult(false, lastExceptionMessage);
     }
 
+    /**
+     * 安全更新渠道信息（异常自动捕获并记录日志）
+     * @param poolId 号池ID
+     * @param channel 渠道对象
+     */
     private void safeUpdateChannel(Long poolId, Channel channel) {
         try {
             updateChannelByPoolId(poolId, channel);
@@ -496,6 +625,10 @@ public class PoolServiceImpl implements PoolService {
         }
     }
 
+    /**
+     * 号池监控入口（加锁防并发）
+     * @param poolId 号池ID
+     */
     @Override
     public void monitorPool(Long poolId) {
         Lock lock = poolLocks.computeIfAbsent(poolId, k -> new ReentrantLock());
@@ -510,6 +643,11 @@ public class PoolServiceImpl implements PoolService {
         }
     }
 
+    /**
+     * 测试号池网络延迟（ping）
+     * @param id 号池ID
+     * @return 平均延迟（毫秒），失败返回-1
+     */
     @Override
     public long testLatency(Long id) {
         PoolEntity poolEntity = selectById(id);
@@ -559,6 +697,11 @@ public class PoolServiceImpl implements PoolService {
         }
     }
 
+    /**
+     * 构建ping命令
+     * @param host 主机名或IP
+     * @return 命令参数列表
+     */
     private List<String> buildPingCommand(String host) {
         String os = System.getProperty("os.name").toLowerCase();
         List<String> command = new ArrayList<>(4);
@@ -569,6 +712,11 @@ public class PoolServiceImpl implements PoolService {
         return command;
     }
 
+    /**
+     * 获取号池统计信息
+     * @param id 号池ID
+     * @return 统计数据Map
+     */
     @Override
     public Map<String, Object> getStatistics(Long id) {
         List<ChannelEntity> channels = channelService.getChannelsByPoolId(id);
@@ -603,11 +751,21 @@ public class PoolServiceImpl implements PoolService {
         return statistics;
     }
 
+    /**
+     * 获取号池下的错误日志
+     * @param id 号池ID
+     * @return 错误日志列表
+     */
     @Override
     public List<ErrorLogEntity> getErrorLogs(Long id) {
         return errorLogService.getErrorsByPoolId(id);
     }
 
+    /**
+     * 规范化代理URL，自动补全协议前缀
+     * @param proxyUrl 原始代理地址
+     * @return 规范化后的代理地址
+     */
     private static String normalizeProxyUrl(String proxyUrl) {
         if (CharSequenceUtil.isBlank(proxyUrl)) return proxyUrl;
         String lower = proxyUrl.toLowerCase();
@@ -618,6 +776,12 @@ public class PoolServiceImpl implements PoolService {
         return "socks5://" + proxyUrl;
     }
 
+    /**
+     * 校验API调用结果是否成功，否则抛出异常
+     * @param r 返回结果
+     * @param defaultMsg 默认错误信息
+     * @param <T> 泛型
+     */
     private static <T> void ensureSuccess(R<T> r, String defaultMsg) {
         if (r == null || !Boolean.TRUE.equals(r.getSuccess())) {
             String msg = r == null ? defaultMsg : (CharSequenceUtil.isBlank(r.getMessage()) ? defaultMsg : r.getMessage());
