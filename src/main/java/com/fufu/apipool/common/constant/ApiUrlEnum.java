@@ -11,7 +11,7 @@ import lombok.Getter;
 public enum ApiUrlEnum {
 
     LIST("list", "GET", "/api/channel/", "查询渠道列表"),
-    TEST("test", "GET", "/api/channel/test/{channelId}?model=", "测试渠道"),
+    TEST("test", "GET", "/api/channel/test/{channelId}?model={model}", "测试渠道"),
     LOGIN("login", "POST", "/api/user/login?turnstile=", "登录"),
     DETAIL("detail", "GET", "/api/channel/{channelId}", "查询渠道详情"),
     EDIT("edit", "PUT", "/api/channel/", "编辑渠道"),

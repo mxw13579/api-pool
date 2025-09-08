@@ -177,6 +177,7 @@ public class PoolServiceImpl implements PoolService {
     public long testChannelByPoolId(Long poolId, Long channelId) {
         Map<String, Object> pathVars = new HashMap<>();
         pathVars.put("channelId", channelId);
+        pathVars.put("model", "gemini-2.5-pro");
         String send = apiHttpUtil.send(poolId, ApiUrlEnum.TEST, pathVars, null, null);
         R r = JSON.parseObject(send, R.class);
         if (!r.getSuccess().equals(true)) {

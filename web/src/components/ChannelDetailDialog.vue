@@ -7,7 +7,7 @@
       @close="$emit('update:visible', false)"
   >
     <!-- 操作区域：添加渠道按钮 -->
-    <div style="margin-bottom: 10px; text-align: right;">
+    <div class="mb-4 text-right">
       <el-button type="primary" @click="openAddDialog">添加渠道</el-button>
     </div>
 
@@ -174,7 +174,7 @@ const defaultChannel: Partial<Channel> = {
   status: 2, // 默认禁用
   key: '',
   baseUrl: '',
-  models: 'gemini-2.5-flash,gemini-2.5-pro,gemini-2.5-pro-preview-05-06,gemini-2.5-pro-preview-06-05',
+  models: 'gemini-2.5-flash,gemini-2.5-pro',
   group: 'default',
   priority: 0,
   weight: 0,

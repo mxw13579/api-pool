@@ -3,7 +3,6 @@
     <!-- 头部工具栏 -->
     <div class="header-toolbar">
       <div class="page-title">
-        <h1>号池管理</h1>
         <p class="subtitle">统一管理API服务池，实时监控运行状态</p>
       </div>
       <div class="toolbar-actions">
@@ -26,13 +25,13 @@
 
     <!-- 号池网格 -->
     <el-row :gutter="20" v-else class="pool-grid">
-      <el-col 
-        :xs="24" 
-        :sm="12" 
-        :md="12" 
-        :lg="8" 
+      <el-col
+        :xs="24"
+        :sm="12"
+        :md="12"
+        :lg="8"
         :xl="6"
-        v-for="pool in pools" 
+        v-for="pool in pools"
         :key="pool.id"
         class="pool-col"
       >
@@ -158,7 +157,7 @@ const defaultChannel: Partial<Channel> = {
   status: 2,
   key: '',
   baseUrl: '',
-  models: 'gemini-2.5-flash,gemini-2.5-pro,gemini-2.5-pro-preview-05-06,gemini-2.5-pro-preview-06-05',
+  models: 'gemini-2.5-flash,gemini-2.5-pro',
   group: 'default',
   priority: 0,
   weight: 0,
@@ -227,8 +226,8 @@ const handleSubmit = async () => {
 const handleDelete = async (poolId: number) => {
   try {
     await ElMessageBox.confirm(
-      '确定要删除这个号池吗? 这将是一个不可逆转的操作。', 
-      '严重警告', 
+      '确定要删除这个号池吗? 这将是一个不可逆转的操作。',
+      '严重警告',
       {
         confirmButtonText: '确定删除',
         cancelButtonText: '取消',
@@ -236,7 +235,7 @@ const handleDelete = async (poolId: number) => {
         buttonSize: 'default',
       }
     );
-    
+
     await deletePool(poolId);
     ElMessage.success('删除成功');
     await fetchPools();
@@ -339,19 +338,11 @@ onMounted(fetchPools);
   gap: 24px;
 }
 
-.page-title h1 {
-  font-size: 28px;
-  font-weight: 700;
-  color: var(--text-primary);
-  margin: 0 0 8px 0;
-  line-height: 1.2;
-}
-
 .page-title .subtitle {
-  font-size: 14px;
-  color: var(--text-muted);
+  font-size: 16px;
+  color: var(--text-secondary);
   margin: 0;
-  font-weight: 400;
+  font-weight: 500;
 }
 
 .toolbar-actions {
@@ -396,15 +387,15 @@ onMounted(fetchPools);
     align-items: stretch;
     gap: 16px;
   }
-  
+
   .toolbar-actions {
     justify-content: stretch;
   }
-  
+
   .toolbar-actions .el-button {
     flex: 1;
   }
-  
+
   .pool-col {
     margin-bottom: 16px;
   }
@@ -455,42 +446,34 @@ onMounted(fetchPools);
     align-items: stretch;
     gap: 16px;
   }
-  
+
   .page-title {
     text-align: center;
   }
-  
-  .page-title h1 {
-    font-size: 24px;
-  }
-  
+
   .toolbar-actions {
     flex-direction: column;
     gap: 8px;
   }
-  
+
   .pool-grid {
     margin: 0 -12px;
   }
-  
+
   .pool-grid :deep(.el-col) {
     padding: 0 12px !important;
   }
 }
 
 @media (max-width: 480px) {
-  .page-title h1 {
-    font-size: 20px;
-  }
-  
   .page-title .subtitle {
-    font-size: 12px;
+    font-size: 14px;
   }
-  
+
   .pool-grid {
     margin: 0 -8px;
   }
-  
+
   .pool-grid :deep(.el-col) {
     padding: 0 8px !important;
   }

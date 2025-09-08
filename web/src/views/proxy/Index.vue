@@ -3,15 +3,14 @@
   <div class="page-container">
     <div class="header-toolbar">
       <el-button type="primary" @click="handleAdd" :icon="Plus" size="large">新增代理</el-button>
-      <el-button type="success" @click="handleBatchAdd" :icon="Plus" size="large" style="margin-left: 10px;">批量添加</el-button>
-<el-button type="danger" @click="handleBatchDelete" :icon="Delete" size="large" :disabled="selectedProxies.length === 0" style="margin-left: 10px;">批量删除</el-button>
+      <el-button type="success" @click="handleBatchAdd" :icon="Plus" size="large" class="ml-3">批量添加</el-button>
+<el-button type="danger" @click="handleBatchDelete" :icon="Delete" size="large" :disabled="selectedProxies.length === 0" class="ml-3">批量删除</el-button>
       <el-checkbox
           v-model="isAllSelected"
           :indeterminate="isIndeterminate"
           @change="toggleSelectAll"
           size="large"
-          class="select-all-checkbox"
-          style="margin-left: 10px; margin-right: 16px;"
+          class="select-all-checkbox ml-3 mr-4"
       >
         全选
       </el-checkbox>
@@ -27,7 +26,7 @@
         <el-card class="themed-card" shadow="always">
           <template #header>
             <div class="card-header">
-              <el-checkbox v-model="selectedProxies" :label="proxy.id" size="large" style="margin-right: 10px; height: 20px" @change="handleSelectionChange" />
+              <el-checkbox v-model="selectedProxies" :label="proxy.id" size="large" class="mr-3" style="height: 20px" @change="handleSelectionChange" />
               <span class="card-title">{{ proxy.name }}</span>
               <el-dropdown trigger="click">
                 <el-button text :icon="MoreFilled" class="more-options-btn" />
@@ -350,7 +349,7 @@ const handleBatchDelete = () => {
 :deep(.el-card__footer) {
   border-top: 1px solid var(--accent-color-light);
   padding: 12px 20px;
-  background-color: #f8fcff;
+  background-color: var(--card-footer-bg);
 }
 
 .card-footer {
@@ -359,14 +358,14 @@ const handleBatchDelete = () => {
   align-items: center;
 }
 .select-all-checkbox {
-  height: 40px;
+  height: 48px;  /* 与 large 按钮高度对齐 */
   display: flex;
   align-items: center;
   padding: 0 18px;
   border: 1.5px solid var(--el-color-primary);
-  border-radius: 20px;
+  border-radius: 6px;  /* 与按钮圆角一致 */
   background: #fff;
-  font-weight: 600;
+  font-weight: 500;  /* 减轻字重 */
   color: var(--el-color-primary);
   box-shadow: 0 2px 8px 0 rgba(64,158,255,0.06);
   transition: background 0.2s, border 0.2s, color 0.2s;
@@ -379,7 +378,7 @@ const handleBatchDelete = () => {
 }
 .select-all-checkbox .el-checkbox__label {
   font-size: 16px;
-  font-weight: 600;
+  font-weight: 500;  /* 与外层一致 */
   padding-left: 4px;
 }
 

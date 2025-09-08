@@ -54,7 +54,6 @@
     <template #footer>
       <div class="card-footer">
         <el-button
-          class="test-latency-btn"
           @click="handleTestLatency"
           :icon="Odometer"
           :loading="isLatencyTesting"
@@ -62,7 +61,6 @@
           延迟测试
         </el-button>
         <el-button
-          class="view-channels-btn"
           @click="handleViewChannels"
           :icon="View"
         >
@@ -249,7 +247,7 @@ const handleShowErrorLogs = () => {
 :deep(.el-card__footer) {
   border-top: 1px solid #eaf6ff;
   padding: 12px 20px;
-  background-color: #f8fcff;
+  background-color: var(--card-footer-bg);
 }
 
 .card-footer {
@@ -258,10 +256,27 @@ const handleShowErrorLogs = () => {
   flex-wrap: wrap;
 }
 
-.view-channels-btn,
-.test-latency-btn {
+.card-footer .el-button {
   flex: 1;
   min-width: 100px;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  min-height: 40px;
+  box-sizing: border-box;
+}
+
+/* 修复loading按钮对齐 */
+.card-footer .el-button.is-loading {
+  pointer-events: none;
+}
+
+.card-footer .el-button.is-loading .el-loading-spinner {
+  margin-right: 8px !important;
+}
+
+.card-footer .el-button.is-loading .el-button__text {
+  opacity: 0.6;
 }
 
 /* 响应式设计 */
@@ -271,8 +286,7 @@ const handleShowErrorLogs = () => {
     gap: 8px;
   }
   
-  .view-channels-btn,
-  .test-latency-btn {
+  .card-footer .el-button {
     width: 100%;
   }
   
@@ -280,36 +294,5 @@ const handleShowErrorLogs = () => {
     grid-template-columns: 1fr;
     gap: 12px;
   }
-}
-
-/* 按钮样式 - 黑色背景白色文字 */
-.card-footer .el-button {
-  background-color: #2d3748 !important;
-  color: white !important;
-  border: 1px solid #2d3748 !important;
-  border-radius: 6px !important;
-  font-size: 13px !important;
-  padding: 8px 16px !important;
-  transition: all 0.2s ease !important;
-}
-
-.card-footer .el-button:hover {
-  background-color: #1a202c !important;
-  border-color: #1a202c !important;
-  transform: translateY(-1px) !important;
-}
-
-.card-footer .el-button:active {
-  transform: translateY(0) !important;
-}
-
-.card-footer .el-button .el-icon {
-  color: white !important;
-}
-
-/* 加载中的按钮保持样式一致 */
-.card-footer .el-button.is-loading {
-  background-color: #4a5568 !important;
-  color: white !important;
 }
 </style>

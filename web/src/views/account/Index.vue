@@ -1,6 +1,6 @@
 <template>
   <div>
-    <el-button type="primary" @click="handleAdd" :icon="Plus">新增账户</el-button>
+    <el-button type="primary" @click="handleAdd" :icon="Plus" size="large">新增账户</el-button>
     <el-table :data="accounts" v-loading="loading" border stripe style="width: 100%; margin-top: 20px;">
       <el-table-column prop="id" label="ID" width="80" />
       <el-table-column prop="name" label="昵称" />

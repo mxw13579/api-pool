@@ -34,6 +34,7 @@
   --app-bg-end: #e0f2ff;
   --card-bg: #ffffff;
   --card-bg-hover: #fafbfc;
+  --card-footer-bg: #f8fcff;
   --overlay-bg: rgba(0, 0, 0, 0.5);
   
   /* 边框色 */
@@ -336,6 +337,19 @@
   transform: scale(1.1) !important;
 }
 
+/* 修复loading按钮的对齐问题 */
+.el-button.is-loading {
+  position: relative !important;
+}
+
+.el-button.is-loading .el-loading-spinner {
+  position: absolute !important;
+  left: 50% !important;
+  top: 50% !important;
+  transform: translate(-50%, -50%) !important;
+  margin: 0 !important;
+}
+
 /* Plain按钮颜色修复 - 确保文字清晰可见 */
 .el-button--primary.is-plain {
   color: var(--primary-600) !important;
@@ -400,9 +414,20 @@
 .justify-center { justify-content: center !important; }
 .justify-between { justify-content: space-between !important; }
 
+.text-left { text-align: left !important; }
+.text-center { text-align: center !important; }
+.text-right { text-align: right !important; }
+
 .gap-2 { gap: var(--spacing-2) !important; }
 .gap-3 { gap: var(--spacing-3) !important; }
 .gap-4 { gap: var(--spacing-4) !important; }
+
+.ml-2 { margin-left: var(--spacing-2) !important; }
+.ml-3 { margin-left: var(--spacing-3) !important; }
+.ml-4 { margin-left: var(--spacing-4) !important; }
+.mr-2 { margin-right: var(--spacing-2) !important; }
+.mr-3 { margin-right: var(--spacing-3) !important; }
+.mr-4 { margin-right: var(--spacing-4) !important; }
 
 .p-4 { padding: var(--spacing-4) !important; }
 .p-6 { padding: var(--spacing-6) !important; }
