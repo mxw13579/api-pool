@@ -266,6 +266,11 @@ const handleShowErrorLogs = () => {
   box-sizing: border-box;
 }
 
+/* 取消 Element Plus 默认的相邻按钮左外边距，避免与 gap 叠加导致错位 */
+.card-footer .el-button + .el-button {
+  margin-left: 0;
+}
+
 /* 修复loading按钮对齐 */
 .card-footer .el-button.is-loading {
   pointer-events: none;

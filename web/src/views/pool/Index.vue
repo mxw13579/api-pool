@@ -351,6 +351,11 @@ onMounted(fetchPools);
   flex-shrink: 0;
 }
 
+/* 取消相邻按钮的默认左外边距，避免与 gap/纵向布局叠加 */
+.toolbar-actions .el-button + .el-button {
+  margin-left: 0;
+}
+
 .loading-state {
   display: flex;
   flex-direction: column;
