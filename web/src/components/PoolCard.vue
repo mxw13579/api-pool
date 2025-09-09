@@ -1,4 +1,4 @@
-<template>
+﻿<template>
   <el-card class="pool-card" shadow="always">
     <template #header>
       <div class="card-header">

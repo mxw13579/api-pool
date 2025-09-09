@@ -1,4 +1,4 @@
-// 基础实体
+﻿// 基础实体
 interface BaseEntity {
     id: number;
     createdAt?: number;

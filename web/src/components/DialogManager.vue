@@ -1,7 +1,7 @@
-<template>
+﻿<template>
   <!-- 号池表单对话框 -->
   <el-dialog v-model="poolDialogVisible" :title="poolDialogTitle" width="500px" custom-class="form-dialog">
-    <el-form :model="poolForm" ref="poolFormRef" label-width="120px" :rules="poolFormRules">
+    <el-form :model="poolForm" ref="poolFormRef" label-width="120px" :label-position="isMobile ? 'top' : 'right'" :rules="poolFormRules">
       <el-form-item label="名称" prop="name">
         <el-input v-model="poolForm.name" placeholder="请输入号池名称"/>
       </el-form-item>
@@ -41,9 +41,10 @@
   </el-dialog>
 
   <!-- 统计信息对话框 -->
-  <el-dialog v-model="statisticsDialogVisible" title="号池统计信息" width="600px">
+  <el-dialog v-model="statisticsDialogVisible" title="号池统计信息" width="600px" custom-class="statistics-dialog">
     <div v-if="currentStatistics">
       <h3 class="statistics-title">账号添加统计</h3>
+      <div class="statistics-table-wrapper">
       <el-table :data="[currentStatistics.accountStats]" class="statistics-table">
         <el-table-column prop="today" label="今日" align="center"/>
         <el-table-column prop="yesterday" label="昨日" align="center"/>
@@ -51,6 +52,7 @@
         <el-table-column prop="thisMonth" label="本月" align="center"/>
         <el-table-column prop="total" label="共计" align="center"/>
       </el-table>
+      </div>
     </div>
     <template #footer>
       <el-button @click="statisticsDialogVisible = false">关闭</el-button>
@@ -58,7 +60,7 @@
   </el-dialog>
 
   <!-- 错误日志对话框 -->
-  <el-dialog v-model="errorLogDialogVisible" title="错误日志" width="1200px">
+  <el-dialog v-model="errorLogDialogVisible" title="错误日志" width="1200px" custom-class="error-logs-dialog">
     <el-table :data="currentErrorLogs" height="400" empty-text="暂无错误日志">
       <el-table-column prop="channelName" label="渠道名称" width="150"/>
       <el-table-column prop="errorMessage" label="错误信息" show-overflow-tooltip/>
@@ -81,16 +83,17 @@
       v-if="batchChannelForm"
       :model="batchChannelForm"
       label-width="120px"
+      :label-position="isMobile ? 'top' : 'right'"
       :rules="batchChannelRules"
       ref="batchChannelFormRef"
     >
       <el-row :gutter="20">
-        <el-col :span="12">
+        <el-col :xs="24" :sm="12">
           <el-form-item label="名称" prop="name">
             <el-input v-model="batchChannelForm.name" placeholder="请输入渠道名称"/>
           </el-form-item>
         </el-col>
-        <el-col :span="12">
+        <el-col :xs="24" :sm="12">
           <el-form-item label="类型">
             <el-select v-model="batchChannelForm.type" placeholder="请选择类型" class="w-full">
               <el-option v-for="(name, code) in channelTypeMap" :key="code" :label="name" :value="Number(code)"/>
@@ -100,12 +103,12 @@
       </el-row>
       
       <el-row :gutter="20">
-        <el-col :span="12">
+        <el-col :xs="24" :sm="12">
           <el-form-item label="分组">
             <el-input v-model="batchChannelForm.group" placeholder="例如: default"/>
           </el-form-item>
         </el-col>
-        <el-col :span="12">
+        <el-col :xs="24" :sm="12">
           <el-form-item label="基础URL">
             <el-input v-model="batchChannelForm.baseUrl" placeholder="例如: https://api.openai.com"/>
           </el-form-item>
@@ -130,17 +133,17 @@
       </el-form-item>
       
       <el-row :gutter="20">
-        <el-col :span="8">
+        <el-col :xs="24" :sm="8">
           <el-form-item label="优先级">
             <el-input-number v-model="batchChannelForm.priority" :min="0" class="w-full"/>
           </el-form-item>
         </el-col>
-        <el-col :span="8">
+        <el-col :xs="24" :sm="8">
           <el-form-item label="权重">
             <el-input-number v-model="batchChannelForm.weight" :min="0" class="w-full"/>
           </el-form-item>
         </el-col>
-        <el-col :span="8">
+        <el-col :xs="24" :sm="8">
           <el-form-item label="自动封禁">
             <el-switch v-model="batchChannelForm.autoBan" :active-value="1" :inactive-value="0"/>
           </el-form-item>
@@ -148,12 +151,12 @@
       </el-row>
       
       <el-row :gutter="20">
-        <el-col :span="12">
+        <el-col :xs="24" :sm="12">
           <el-form-item label="标签">
             <el-input v-model="batchChannelForm.tag" placeholder="请输入渠道标签"/>
           </el-form-item>
         </el-col>
-        <el-col :span="12">
+        <el-col :xs="24" :sm="12">
           <el-form-item label="代理设置">
             <el-select v-model="batchChannelForm.proxy" placeholder="请选择代理类型" class="w-full">
               <el-option v-for="(name, code) in proxyTypeMap" :key="code" :label="name" :value="Number(code)"/>
@@ -250,7 +253,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed } from 'vue';
+import { ref, computed, onMounted, onUnmounted } from 'vue';
 import { ElForm, ElMessage } from 'element-plus';
 import { SuccessFilled, CircleCloseFilled } from '@element-plus/icons-vue';
 import type { PoolEntity, Channel } from '@/types';
@@ -347,6 +350,13 @@ const batchResultDialogVisible = computed({
   get: () => props.batchResultDialogVisible,
   set: (value) => emit('update:batchResultDialogVisible', value)
 });
+
+// 响应式：用于小屏切换表单标签位置
+const screenWidth = ref(typeof window !== 'undefined' ? window.innerWidth : 1024);
+const isMobile = computed(() => screenWidth.value < 768);
+const onResize = () => { screenWidth.value = window.innerWidth; };
+onMounted(() => window.addEventListener('resize', onResize));
+onUnmounted(() => window.removeEventListener('resize', onResize));
 
 // 方法
 const handlePoolSubmit = async () => {
@@ -450,6 +460,12 @@ const getResultItemClass = (msg: string): string => {
   overflow: hidden;
 }
 
+/* 统计表格：小屏可横向滚动 */
+.statistics-table-wrapper {
+  width: 100%;
+  overflow-x: auto;
+}
+
 .batch-result-summary {
   display: flex;
   gap: 12px;
@@ -508,6 +524,25 @@ const getResultItemClass = (msg: string): string => {
   
   .dialog-footer {
     flex-direction: column;
+  }
+}
+</style>
+
+<!-- Responsive dialog widths for small screens -->
+<style>
+@media (max-width: 768px) {
+  :deep(.el-dialog.statistics-dialog),
+  :deep(.el-dialog.error-logs-dialog),
+  :deep(.el-dialog.form-dialog) {
+    width: 95% !important;
+    max-width: 95% !important;
+    margin: 0 auto !important;
+  }
+  /* 批量新增表单在移动端的页脚按钮垂直排列，更易点击 */
+  :deep(.el-dialog.form-dialog .el-dialog__footer) {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
   }
 }
 </style>

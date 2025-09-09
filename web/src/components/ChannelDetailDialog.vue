@@ -1,56 +1,64 @@
-<template>
+﻿<template>
   <!-- 渠道列表主对话框 -->
   <el-dialog
       :model-value="visible"
       title="渠道列表"
-      width="80%"
+      width="90%"
+      :close-on-click-modal="false"
+      class="channel-list-dialog"
       @close="$emit('update:visible', false)"
   >
     <!-- 操作区域：添加渠道按钮 -->
-    <div class="mb-4 text-right">
-      <el-button type="primary" @click="openAddDialog">添加渠道</el-button>
+    <div class="channel-header">
+      <el-button type="primary" @click="openAddDialog" size="default">
+        <el-icon><Plus /></el-icon>
+        添加渠道
+      </el-button>
     </div>
 
-    <!-- 渠道数据表格 -->
-    <el-table :data="channels" v-loading="loading" border stripe>
-      <el-table-column prop="id" label="ID" width="80" />
-      <el-table-column prop="name" label="名称" />
-      <el-table-column prop="type" label="类型">
-        <template #default="{ row }">
-          {{ getChannelTypeName(row.type) }}
-        </template>
-      </el-table-column>
-      <el-table-column prop="status" label="状态">
-        <template #default="{ row }">
-          <el-tag :type="getStatusTag(row.status)">
-            {{ getChannelStatusName(row.status) }}
-          </el-tag>
-        </template>
-      </el-table-column>
-      <el-table-column prop="group" label="分组" />
-      <el-table-column label="已用配额">
-        <template #default="{ row }">
-          {{ row.usedQuota ? (Math.floor(row.usedQuota / 500000 * 100) / 100) : 0 }}
-        </template>
-      </el-table-column>
-      <el-table-column prop="priority" label="优先级" />
-      <el-table-column prop="responseTime" label="响应时间(ms)" />
-      <el-table-column label="操作" fixed="right" width="260">
-        <template #default="{ row }">
-          <el-button size="small" @click="testChannel(row)" type="primary" plain>测试</el-button>
-          <el-button
-              size="small"
-              :type="row.status === 1 ? 'warning' : 'success'"
-              @click="toggleChannelStatus(row)"
-              plain
-          >
-            {{ row.status === 1 ? '禁用' : '启用' }}
-          </el-button>
-          <el-button size="small" @click="openEditDialog(row)" type="info" plain>编辑</el-button>
-          <el-button size="small" @click="deleteChannel(row)" type="danger" plain>删除</el-button>
-        </template>
-      </el-table-column>
-    </el-table>
+    <!-- 渠道数据表格：移动端更友好（可横向滚动 + 精简列） -->
+    <div class="table-responsive">
+      <el-table :data="channels" v-loading="loading" border>
+        <el-table-column prop="id" label="ID" :width="isMobile ? 60 : 80" />
+        <el-table-column prop="name" label="名称" />
+        <el-table-column prop="type" label="类型">
+          <template #default="{ row }">
+            {{ getChannelTypeName(row.type) }}
+          </template>
+        </el-table-column>
+        <el-table-column prop="status" label="状态">
+          <template #default="{ row }">
+            <el-tag effect="plain">
+              {{ getChannelStatusName(row.status) }}
+            </el-tag>
+          </template>
+        </el-table-column>
+        <el-table-column prop="group" label="分组" v-if="!isMobile" />
+        <el-table-column label="已用配额" v-if="!isMobile">
+          <template #default="{ row }">
+            {{ row.usedQuota ? (Math.floor(row.usedQuota / 500000 * 100) / 100) : 0 }}
+          </template>
+        </el-table-column>
+        <el-table-column prop="priority" label="优先级" v-if="!isMobile" />
+        <el-table-column prop="responseTime" label="响应时间(ms)" v-if="!isMobile" />
+        <el-table-column label="操作" fixed="right" :width="isMobile ? 220 : 300">
+          <template #default="{ row }">
+            <div class="table-actions">
+              <el-button size="small" @click="testChannel(row)" plain>测试</el-button>
+              <el-button
+                  size="small"
+                  @click="toggleChannelStatus(row)"
+                  plain
+  >
+                {{ row.status === 1 ? '禁用' : '启用' }}
+              </el-button>
+              <el-button size="small" @click="openEditDialog(row)" plain>编辑</el-button>
+              <el-button size="small" @click="deleteChannel(row)" plain>删除</el-button>
+            </div>
+          </template>
+        </el-table-column>
+      </el-table>
+    </div>
   </el-dialog>
 
   <!-- 添加/编辑渠道的复用对话框 -->
@@ -59,14 +67,16 @@
       :title="formMode === 'add' ? '添加渠道' : '编辑渠道'"
       width="50%"
       :close-on-click-modal="false"
+      class="channel-form-dialog"
   >
     <!-- 表单 v-loading 用于在加载编辑数据时显示加载动画 -->
     <el-form
         v-if="currentChannel"
         :model="currentChannel"
         label-width="120px"
+        :label-position="isMobile ? 'top' : 'right'"
         v-loading="formLoading"
-    >
+  >
       <el-form-item label="名称">
         <el-input v-model="currentChannel.name" placeholder="请输入渠道名称" />
       </el-form-item>
@@ -76,7 +86,7 @@
         </el-select>
       </el-form-item>
       <el-form-item label="分组">
-        <el-input v-model="currentChannel.group" placeholder="请输入分组名称, e.g. default" />
+        <el-input v-model="currentChannel.group" placeholder="请输入分组名，例如 default" />
       </el-form-item>
       <el-form-item label="密钥">
         <el-input v-model="currentChannel.key" type="textarea" :rows="10" show-password placeholder="请输入渠道密钥" />
@@ -121,16 +131,16 @@
       </el-form-item>
     </el-form>
     <template #footer>
-      <span class="dialog-footer">
+      <div class="dialog-footer">
         <el-button @click="formDialogVisible = false">取消</el-button>
         <el-button type="primary" @click="handleSave">保存</el-button>
-      </span>
+      </div>
     </template>
   </el-dialog>
 </template>
 
 <script setup lang="ts">
-import { ref, watch } from 'vue';
+import { ref, watch, computed, onMounted, onUnmounted } from 'vue';
 import {
   getChannelsByPoolId,
   updateChannelByPoolId,
@@ -141,6 +151,7 @@ import {
 } from '@/api/pool'; // 引入所有需要的API函数
 import type { Channel } from '@/types'; // 引入Channel类型定义
 import { ElMessage, ElMessageBox } from 'element-plus'; // 引入Element Plus组件
+import { Plus } from '@element-plus/icons-vue'; // 引入图标
 import {channelStatusMap, channelTypeMap, proxyTypeMap} from '@/utils/maps'; // 引入辅助映射
 
 // 定义组件的props，接收父组件传来的可见性和号池ID
@@ -149,18 +160,25 @@ const props = defineProps<{
   poolId: number | null;
 }>();
 
-// 定义组件的emits，用于通知父组件更新状态
+// 定义组件的emits，用于通知父组件更新状态?
 const emit = defineEmits(['update:visible']);
 
-// --- 响应式状态定义 ---
+// --- 响应式状态定义?---
 
-// 主表格的加载状态
+// 主表格的加载状态?
 const loading = ref(false);
 // 存储渠道列表数据
 const channels = ref<Channel[]>([]);
+
+// 响应式：检测是否为移动端，用于精简表格列与宽度
+const screenWidth = ref(typeof window !== 'undefined' ? window.innerWidth : 1024);
+const isMobile = computed(() => screenWidth.value < 768);
+const onResize = () => { screenWidth.value = window.innerWidth; };
+onMounted(() => window.addEventListener('resize', onResize));
+onUnmounted(() => window.removeEventListener('resize', onResize));
 // 添加/编辑表单对话框的可见性
 const formDialogVisible = ref(false);
-// 表单模式，'add' 为添加模式, 'edit' 为编辑模式
+// 表单模式：'add' 为添加模式，'edit' 为编辑模式
 const formMode = ref<'add' | 'edit'>('add');
 // 当前正在表单中操作的渠道数据
 const currentChannel = ref<Partial<Channel> | null>(null);
@@ -178,7 +196,7 @@ const defaultChannel: Partial<Channel> = {
   group: 'default',
   priority: 0,
   weight: 0,
-  autoBan: 1, // 默认开启自动封禁
+  autoBan: 1, // 默认开启自动封禁?
   modelMapping: '{}',
   tag: '',
   setting: "",
@@ -219,13 +237,13 @@ watch(
       if (newVal && props.poolId !== null) {
         fetchChannels(props.poolId);
       } else {
-        channels.value = []; // 关闭时清空数据
+        channels.value = []; // 关闭时清空数据?
       }
     }
 );
 
 /**
- * 打开添加渠道对话框
+ * 打开添加渠道对话框?
  */
 const openAddDialog = () => {
   formMode.value = 'add';
@@ -234,11 +252,11 @@ const openAddDialog = () => {
 };
 
 /**
- * 打开编辑渠道对话框
+ * 打开编辑渠道对话框?
  */
 const openEditDialog = async (row: Channel) => {
   formMode.value = 'edit';
-  currentChannel.value = null; // 先清空，避免显示旧数据
+  currentChannel.value = null; // 先清空，避免显示旧数据?
   formDialogVisible.value = true;
   formLoading.value = true;
 
@@ -270,7 +288,7 @@ const handleSave = async () => {
       await updateChannelByPoolId(props.poolId, currentChannel.value as Channel);
       ElMessage.success('渠道更新成功');
     }
-    formDialogVisible.value = false; // 关闭对话框
+    formDialogVisible.value = false; // 关闭对话框?
     fetchChannels(props.poolId); // 刷新列表
   } catch (e) {
     ElMessage.error(formMode.value === 'add' ? '添加失败' : '更新失败');
@@ -316,7 +334,7 @@ const toggleChannelStatus = async (row: Channel) => {
  */
 const deleteChannel = async (row: Channel) => {
   try {
-    await ElMessageBox.confirm(`确定要删除渠道 “${row.name}” 吗？`, '警告', {
+    await ElMessageBox.confirm(`确定要删除渠道“${row.name}”吗？`, '警告', {
       confirmButtonText: '确定',
       cancelButtonText: '取消',
       type: 'warning',
@@ -325,10 +343,163 @@ const deleteChannel = async (row: Channel) => {
     ElMessage.success('删除成功');
     fetchChannels(props.poolId!); // 删除成功后刷新列表
   } catch (error) {
-    // 如果是取消操作(catch 'cancel')，则不显示消息
+    // 如果是取消操作?catch 'cancel')，则不显示消息?
     if (error !== 'cancel') {
       ElMessage.error('删除失败');
     }
   }
 };
 </script>
+
+<style scoped>
+/* 渠道列表对话框样式?*/
+:deep(.channel-list-dialog) {
+  max-width: 1400px;
+}
+
+:deep(.channel-list-dialog .el-dialog__body) {
+  padding: 20px 24px;
+}
+
+/* 页头样式 */
+.channel-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid var(--card-border);
+}
+
+.channel-header .el-button {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+/* 表格操作按钮样式 */
+.table-actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+.table-actions .el-button {
+  min-width: 60px;
+  font-size: 12px;
+  padding: 6px 12px;
+  color: var(--text-secondary);
+  border-color: var(--card-border);
+  background-color: transparent;
+}
+
+.table-actions .el-button:hover {
+  color: var(--text-primary);
+  border-color: var(--text-secondary);
+  background-color: var(--card-bg-hover);
+}
+
+/* 取消相邻按钮的默认左外边距?*/
+.table-actions .el-button + .el-button {
+  margin-left: 0;
+}
+
+/* 表单对话框样式?*/
+.dialog-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+}
+
+.dialog-footer .el-button + .el-button {
+  margin-left: 0;
+}
+
+/* 响应式设置?*/
+@media (max-width: 1200px) {
+  :deep(.channel-list-dialog) {
+    width: 95% !important;
+    margin: 0 auto;
+  }
+}
+
+@media (max-width: 768px) {
+  .table-actions {
+    flex-direction: column;
+    gap: 4px;
+  }
+  
+  .table-actions .el-button {
+    width: 100%;
+    margin: 0;
+  }
+  
+  :deep(.el-table .el-table__cell) {
+    padding: 8px 4px;
+  }
+  /* 表单对话框在小屏宽度与内边距优化 */
+  :deep(.channel-form-dialog) {
+    width: 95% !important;
+    max-width: 95% !important;
+    margin: 0 auto !important;
+  }
+  :deep(.channel-form-dialog .el-dialog__body) {
+    padding: 16px 16px !important;
+  }
+}
+
+/* 表格样式优化 */
+:deep(.el-table) {
+  font-size: 14px;
+  border-color: var(--card-border);
+}
+
+:deep(.el-table th) {
+  background-color: var(--card-bg);
+  font-weight: 600;
+  color: var(--text-primary);
+  border-bottom: 1px solid var(--card-border);
+}
+
+:deep(.el-table td) {
+  color: var(--text-secondary);
+  border-color: var(--card-border);
+}
+
+:deep(.el-table--border) {
+  border-color: var(--card-border);
+}
+
+:deep(.el-table--border::after) {
+  background-color: var(--card-border);
+}
+
+/* 状态标签样式?*/
+:deep(.el-tag) {
+  font-weight: 500;
+  color: var(--text-secondary);
+  background-color: var(--card-bg-hover);
+  border-color: var(--card-border);
+}
+
+/* 表单样式优化 */
+:deep(.el-form-item__label) {
+  font-weight: 500;
+  color: var(--text-primary);
+}
+
+:deep(.el-input__inner) {
+  font-size: 14px;
+}
+
+:deep(.el-textarea__inner) {
+  font-size: 14px;
+}
+
+/* 让表格在小屏下可横向滚动，避免挤压?*/
+.table-responsive {
+  width: 100%;
+  overflow-x: auto;
+}
+</style>

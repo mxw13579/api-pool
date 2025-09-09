@@ -12,7 +12,10 @@ target/
 .settings
 .springBeans
 .sts4-cache
-
+**/ChannelAddUtil*
+**/Kyes1.text
+**/proxy.text
+**/upstreamUrlList.text
 ### IntelliJ IDEA ###
 .idea
 *.iws

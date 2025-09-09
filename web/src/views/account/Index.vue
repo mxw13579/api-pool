@@ -1,7 +1,8 @@
-<template>
+﻿<template>
   <div>
     <el-button type="primary" @click="handleAdd" :icon="Plus" size="large">新增账户</el-button>
-    <el-table :data="accounts" v-loading="loading" border stripe style="width: 100%; margin-top: 20px;">
+    <div class="table-responsive" style="margin-top: 20px;">
+      <el-table :data="accounts" v-loading="loading" border stripe class="account-table" style="width: 100%;">
       <el-table-column prop="id" label="ID" width="80" />
       <el-table-column prop="name" label="昵称" />
       <el-table-column prop="username" label="用户名" />
@@ -21,7 +22,8 @@
           <el-button size="small" type="danger" @click="handleDelete(row.id)">删除</el-button>
         </template>
       </el-table-column>
-    </el-table>
+      </el-table>
+    </div>
 
     <!-- Form Dialog -->
     <el-dialog v-model="dialogVisible" :title="dialogTitle" width="500px">
@@ -112,3 +114,17 @@ const handleDelete = (id: number) => {
   });
 };
 </script>
+
+<style scoped>
+.table-responsive {
+  width: 100%;
+  overflow-x: auto;
+}
+
+@media (max-width: 768px) {
+  .account-table :deep(.el-table__cell) {
+    padding: 8px 6px;
+    font-size: 13px;
+  }
+}
+</style>

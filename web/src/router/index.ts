@@ -1,4 +1,4 @@
-import { createRouter, createWebHistory } from 'vue-router';
+﻿import { createRouter, createWebHistory } from 'vue-router';
 import Layout from '@/layout/Index.vue';
 
 // 导入token管理函数

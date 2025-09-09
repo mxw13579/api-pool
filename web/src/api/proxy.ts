@@ -1,4 +1,4 @@
-import request from './index';
+﻿import request from './index';
 import type { ProxyEntity } from '@/types';
 
 /** 获取代理列表 */

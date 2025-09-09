@@ -1,4 +1,4 @@
-import request from './index';
+﻿import request from './index';
 import type { AccountEntity } from '@/types';
 
 export const getAccountList = (): Promise<AccountEntity[]> => {

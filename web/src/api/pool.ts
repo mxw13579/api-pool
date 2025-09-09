@@ -1,4 +1,4 @@
-import request from './index';
+﻿import request from './index';
 import type {PoolEntity, Channel} from '@/types';
 
 /** 批量为所有号池新增一个渠道 */

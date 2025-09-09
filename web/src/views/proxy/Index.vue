@@ -1,4 +1,4 @@
-
+﻿
 <template>
   <div class="page-container">
     <div class="header-toolbar">
@@ -272,6 +272,9 @@ const handleBatchDelete = () => {
 
 .header-toolbar {
   margin-bottom: 24px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
 }
 
 .loading-state {
@@ -389,4 +392,21 @@ const handleBatchDelete = () => {
 }
 
 
+</style>
+
+<style scoped>
+/* 避免与 Element Plus 默认相邻按钮左外边距叠加 */
+.header-toolbar .el-button + .el-button { margin-left: 0; }
+
+/* 移动端：纵向排列并清理工具类左右边距 */
+@media (max-width: 768px) {
+  .header-toolbar { flex-direction: column; align-items: stretch; gap: 8px; }
+  .header-toolbar .ml-3, .header-toolbar .mr-3, .header-toolbar .mr-4 { margin-left: 0 !important; margin-right: 0 !important; }
+  /* 对当前页面内的对话框统一做移动端宽度适配 */
+  :deep(.el-dialog) {
+    width: 95% !important;
+    max-width: 95% !important;
+    margin: 0 auto !important;
+  }
+}
 </style>

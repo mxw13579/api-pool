@@ -1,4 +1,4 @@
-// 基于 ChannelStatus.java
+﻿// 基于 ChannelStatus.java
 export const channelStatusMap: { [key: number]: { text: string, type: 'success' | 'warning' | 'danger' | 'info' } } = {
     1: { text: '启用', type: 'success' },
     2: { text: '手动禁用', type: 'warning' },
