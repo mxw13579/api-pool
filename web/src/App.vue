@@ -1,7 +1,7 @@
 ﻿<template>
   <router-view v-slot="{ Component, route }">
     <transition 
-      :name="route.meta?.transition || 'fade'" 
+      :name="String(route.meta?.transition || 'fade')" 
       mode="out-in"
       appear
     >
