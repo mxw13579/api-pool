@@ -150,7 +150,7 @@ const defaultChannel: Partial<Channel> = {
   key: '',
   baseUrl: '',
   models: 'gemini-2.5-flash,gemini-2.5-pro',
-  group: 'default',
+  groups: ['default'],
   priority: 0,
   weight: 0,
   autoBan: 1,

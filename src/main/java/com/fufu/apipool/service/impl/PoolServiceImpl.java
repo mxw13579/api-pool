@@ -214,18 +214,31 @@ public class PoolServiceImpl implements PoolService {
             throw new RuntimeException("根据策略未能获取到任何可用的代理，请检查代理列表及其状态。");
         }
 
-        if (selectedProxy != null) {
+      Map<String, Object> setting = new HashMap<>(2);
+
+
+      if (selectedProxy != null) {
             String proxyUrl = normalizeProxyUrl(selectedProxy.getProxyUrl());
             // 统一用对象序列化，避免手拼 JSON
-            Map<String, String> setting = new HashMap<>(2);
             setting.put("proxy", proxyUrl);
-            String settingJson = JSON.toJSONString(setting);
-            channel.setSetting(settingJson);
-            dto.setSetting(proxyUrl);
             log.info("选定代理: ID={}, URL={}", selectedProxy.getId(), proxyUrl);
         }
 
-        String send = apiHttpUtil.send(poolId, ApiUrlEnum.ADD, null, null, channel);
+      setting.put("force_format", false);
+      setting.put("thinking_to_content", false);
+      setting.put("pass_through_body_enabled", false);
+      setting.put("system_prompt_override", false);
+      setting.put("system_prompt", "");
+
+      String settingJson = JSON.toJSONString(setting);
+      channel.setSetting(settingJson);
+      dto.setSetting((String) setting.get("proxy"));
+
+
+        NewChannel newChannel = new NewChannel();
+        newChannel.setChannel(channel);
+
+        String send = apiHttpUtil.send(poolId, ApiUrlEnum.ADD, null, null, newChannel);
         R<Channel> r = JSON.parseObject(send, new TypeReference<R<Channel>>() {}, JSON_FEATURES);
 //        ensureSuccess(r, "调用API添加渠道失败");
 

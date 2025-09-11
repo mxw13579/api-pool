@@ -69,7 +69,7 @@ export interface Channel {
     balance: number;
     balance_updated_time: number;
     models: string;
-    group: string;
+    groups: string[];
     used_quota: number;
     priority: number;
     other: string;

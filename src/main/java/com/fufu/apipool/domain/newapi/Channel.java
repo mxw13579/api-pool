@@ -98,7 +98,7 @@ public class Channel{
     /**
      * 分组
      */
-    private String group;
+    private String[] groups;
 
     /**
      * 已用配额
