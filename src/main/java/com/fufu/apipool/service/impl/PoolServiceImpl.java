@@ -227,13 +227,9 @@ public class PoolServiceImpl implements PoolService {
 
         String send = apiHttpUtil.send(poolId, ApiUrlEnum.ADD, null, null, channel);
         R<Channel> r = JSON.parseObject(send, new TypeReference<R<Channel>>() {}, JSON_FEATURES);
-        ensureSuccess(r, "调用API添加渠道失败");
+//        ensureSuccess(r, "调用API添加渠道失败");
 
-        Channel createdChannel = r.getData();
-        if (createdChannel == null) {
-            log.warn("API添加渠道成功，但未返回渠道信息，使用本地数据进行补偿。PoolId: {}, ChannelName: {}", poolId, channel.getName());
-            createdChannel = channel;
-        }
+        Channel createdChannel = channel;
         channelService.addChannel(new ChannelEntity(createdChannel, poolId));
 
         if (selectedProxy != null) {
