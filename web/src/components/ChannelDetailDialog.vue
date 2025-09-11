@@ -86,7 +86,7 @@
         </el-select>
       </el-form-item>
       <el-form-item label="分组">
-        <el-input v-model="currentChannel.group" placeholder="请输入分组名，例如 default" />
+        <el-input v-model="currentGroupName" placeholder="请输入分组名，例如 default" />
       </el-form-item>
       <el-form-item label="密钥">
         <el-input v-model="currentChannel.key" type="textarea" :rows="10" show-password placeholder="请输入渠道密钥" />
@@ -193,7 +193,7 @@ const defaultChannel: Partial<Channel> = {
   key: '',
   baseUrl: '',
   models: 'gemini-2.5-flash,gemini-2.5-pro',
-  group: 'default',
+  groups: ['default'],
   priority: 0,
   weight: 0,
   autoBan: 1, // 默认开启自动封禁?
@@ -210,6 +210,24 @@ const defaultChannel: Partial<Channel> = {
 
 const getChannelTypeName = (code: number) => channelTypeMap[code] || '未知';
 const getChannelStatusName = (code: number) => channelStatusMap[code]?.text || '未知';
+
+// 计算属性：安全地处理groups数组的第一个元素
+const currentGroupName = computed({
+  get: () => {
+    if (!currentChannel.value?.groups || !Array.isArray(currentChannel.value.groups)) {
+      return '';
+    }
+    return currentChannel.value.groups[0] || '';
+  },
+  set: (value: string) => {
+    if (currentChannel.value) {
+      if (!currentChannel.value.groups) {
+        currentChannel.value.groups = [];
+      }
+      currentChannel.value.groups[0] = value;
+    }
+  }
+});
 
 // --- API调用与逻辑处理 ---
 
