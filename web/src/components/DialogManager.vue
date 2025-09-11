@@ -105,7 +105,7 @@
       <el-row :gutter="20">
         <el-col :xs="24" :sm="12">
           <el-form-item label="分组">
-            <el-input v-model="batchChannelForm.group" placeholder="例如: default"/>
+            <el-input v-model="batchChannelGroupName" placeholder="例如: default"/>
           </el-form-item>
         </el-col>
         <el-col :xs="24" :sm="12">
@@ -317,6 +317,23 @@ const batchChannelRules = {
 };
 
 // 计算属性
+const batchChannelGroupName = computed({
+  get: () => {
+    if (!props.batchChannelForm?.groups || !Array.isArray(props.batchChannelForm.groups)) {
+      return '';
+    }
+    return props.batchChannelForm.groups[0] || '';
+  },
+  set: (value: string) => {
+    if (props.batchChannelForm) {
+      if (!props.batchChannelForm.groups) {
+        props.batchChannelForm.groups = [];
+      }
+      props.batchChannelForm.groups[0] = value;
+    }
+  }
+});
+
 const totalCount = computed(() => props.batchResultList.length);
 const successCount = computed(() => 
   props.batchResultList.filter(msg => msg.includes('成功')).length
