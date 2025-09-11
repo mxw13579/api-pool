@@ -30,7 +30,7 @@
             clearable
           />
         </el-form-item>
-        
+
         <el-form-item prop="password" class="form-item">
           <el-input
             v-model="loginForm.password"
@@ -102,7 +102,7 @@ const loginRules = {
   ],
   password: [
     { required: true, message: '请输入密码', trigger: 'blur' },
-    { min: 4, max: 20, message: '密码长度在 4 到 20 个字符', trigger: 'blur' }
+    { min: 4, max: 80, message: '密码长度在 4 到 80 个字符', trigger: 'blur' }
   ]
 };
 
@@ -112,7 +112,7 @@ const router = useRouter();
 
 const handleLogin = async () => {
   if (!loginFormRef.value) return;
-  
+
   try {
     // 先进行表单验证
     const isValid = await loginFormRef.value.validate();
@@ -120,12 +120,12 @@ const handleLogin = async () => {
 
     loading.value = true;
     error.value = '';
-    
+
     const res = await request.post('/account/login', {
       username: loginForm.username,
       password: loginForm.password,
     });
-    
+
     const token = res.data.token;
     if (token) {
       setToken(token); // 使用安全的token设置函数
@@ -227,16 +227,16 @@ const handleLogin = async () => {
   .login-container {
     padding: 16px;
   }
-  
+
   .login-form {
     padding: 32px 24px;
     max-width: 100%;
   }
-  
+
   .brand-title {
     font-size: 20px;
   }
-  
+
   .brand-subtitle {
     font-size: 13px;
   }
