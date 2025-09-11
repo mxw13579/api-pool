@@ -114,7 +114,6 @@ const mobileMenuOpen = ref(false)
 // 断点判断
 const isMobile = computed(() => screenWidth.value < 768)
 const isTablet = computed(() => screenWidth.value >= 768 && screenWidth.value < 1024)
-const isDesktop = computed(() => screenWidth.value >= 1024)
 
 // 侧边栏宽度
 const sidebarWidth = computed(() => {

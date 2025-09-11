@@ -210,7 +210,6 @@ const defaultChannel: Partial<Channel> = {
 
 const getChannelTypeName = (code: number) => channelTypeMap[code] || '未知';
 const getChannelStatusName = (code: number) => channelStatusMap[code]?.text || '未知';
-const getStatusTag = (code: number) => channelStatusMap[code]?.type || 'info';
 
 // --- API调用与逻辑处理 ---
 
