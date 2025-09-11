@@ -81,7 +81,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, computed } from 'vue';
+import { ref, onMounted } from 'vue';
 import {
   getPoolList,
   addPool,
@@ -141,14 +141,6 @@ const batchChannelForm = ref<Partial<Channel>>({});
 const batchResultDialogVisible = ref(false);
 const batchResultList = ref<string[]>([]);
 
-// 计算属性
-const totalCount = computed(() => batchResultList.value.length);
-const successCount = computed(() =>
-  batchResultList.value.filter(msg => msg.includes('成功')).length
-);
-const failCount = computed(() =>
-  batchResultList.value.filter(msg => msg.includes('失败') || msg.includes('异常')).length
-);
 
 // 默认数据
 const defaultChannel: Partial<Channel> = {
