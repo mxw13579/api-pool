@@ -3,24 +3,25 @@ package com.fufu.apipool.controller;
 import com.fufu.apipool.common.Result;
 import com.fufu.apipool.common.ResultUtil;
 import com.fufu.apipool.domain.dto.PageRequest;
-import com.fufu.apipool.domain.vo.PageResult;
 import com.fufu.apipool.domain.dto.ProxyBatchesEntity;
+import com.fufu.apipool.domain.vo.PageResult;
 import com.fufu.apipool.domain.vo.ProxyVO;
 import com.fufu.apipool.entity.ProxyEntity;
 import com.fufu.apipool.service.ProxyService;
+import jakarta.validation.Valid;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
 /**
- * 代理控制器
- * 提供代理相关的REST接口
- * @author lizelin
+ * Proxy management REST endpoints.
  */
 @Slf4j
 @RestController
+@Validated
 @RequestMapping("/api/proxy")
 @AllArgsConstructor
 public class ProxyController {
@@ -28,21 +29,16 @@ public class ProxyController {
     private final ProxyService proxyService;
 
     /**
-     * 分页查询代理列表
-     *
-     * @param pageRequest 分页请求参数
-     * @return Result对象，包含分页结果
+     * Paginated proxy listing.
      */
     @GetMapping("/list")
-    public Result<PageResult<ProxyVO>> list(PageRequest pageRequest) {
+    public Result<PageResult<ProxyVO>> list(@Valid PageRequest pageRequest) {
         PageResult<ProxyVO> pageResult = proxyService.selectPage(pageRequest);
         return ResultUtil.getSuccessResult(pageResult);
     }
 
     /**
-     * 查询所有代理（保持向后兼容）
-     *
-     * @return Result对象，包含代理列表
+     * Full proxy list (legacy compatibility).
      */
     @GetMapping("/list/all")
     public Result<List<ProxyVO>> listAll() {
@@ -51,10 +47,7 @@ public class ProxyController {
     }
 
     /**
-     * 根据ID查询代理
-     *
-     * @param id 代理ID
-     * @return Result对象，包含代理信息
+     * Fetch a proxy by id.
      */
     @GetMapping("/{id}")
     public Result<ProxyVO> getById(@PathVariable Long id) {
@@ -63,10 +56,7 @@ public class ProxyController {
     }
 
     /**
-     * 新增代理
-     *
-     * @param proxyEntity 代理实体
-     * @return Result对象，包含插入行数
+     * Create a proxy.
      */
     @PostMapping("/add")
     public Result<Integer> add(@RequestBody ProxyEntity proxyEntity) {
@@ -75,10 +65,7 @@ public class ProxyController {
     }
 
     /**
-     * 批量新增代理
-     *
-     * @param proxyBatches 代理实体
-     * @return Result对象，包含插入行数
+     * Batch create proxies.
      */
     @PostMapping("/add-batches")
     public Result<Integer> addBatches(@RequestBody ProxyBatchesEntity proxyBatches) {
@@ -86,12 +73,8 @@ public class ProxyController {
         return ResultUtil.getSuccessResult(count);
     }
 
-
     /**
-     * 更新代理
-     *
-     * @param proxyEntity 代理实体
-     * @return Result对象，包含更新行数
+     * Update a proxy.
      */
     @PutMapping("/update")
     public Result<Integer> update(@RequestBody ProxyEntity proxyEntity) {
@@ -100,10 +83,7 @@ public class ProxyController {
     }
 
     /**
-     * 删除代理
-     *
-     * @param id 代理ID
-     * @return Result对象，包含删除行数
+     * Delete a proxy by id.
      */
     @DeleteMapping("/delete/{id}")
     public Result<Integer> delete(@PathVariable Long id) {
@@ -112,10 +92,7 @@ public class ProxyController {
     }
 
     /**
-     * 批量删除代理
-     *
-     * @param ids 代理ID列表
-     * @return Result对象，包含删除行数
+     * Batch delete proxies.
      */
     @DeleteMapping("/delete-batches")
     public Result<Integer> deleteBatches(@RequestBody List<Long> ids) {

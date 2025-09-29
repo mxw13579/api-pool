@@ -28,6 +28,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.annotation.Propagation;
 
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
@@ -625,12 +626,14 @@ public class PoolServiceImpl implements PoolService {
      * @param poolId 号池ID
      * @param channel 渠道对象
      */
-    private void safeUpdateChannel(Long poolId, Channel channel) {
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    public void safeUpdateChannel(Long poolId, Channel channel) {
         try {
             updateChannelByPoolId(poolId, channel);
         } catch (Exception e) {
             log.error("CRITICAL: 更新号池[ID:{}]的渠道[{}({})]状态失败！数据库与内存状态可能不一致。",
                     poolId, channel.getName(), channel.getId(), e);
+            // 不再抛出异常，避免阻塞其他渠道的处理
         }
     }
 
