@@ -1,13 +1,18 @@
 package com.fufu.apipool.service.impl;
 
 import com.fufu.apipool.common.BaseEntity;
+import com.fufu.apipool.common.util.SqlSecurityUtil;
+import com.fufu.apipool.domain.dto.PageRequest;
 import com.fufu.apipool.domain.dto.ProxyBatchesEntity;
+import com.fufu.apipool.domain.vo.PageResult;
 import com.fufu.apipool.entity.ProxyEntity;
 import com.fufu.apipool.mapper.ProxyMapper;
 import com.fufu.apipool.service.PoolProxyRelationService;
 import com.fufu.apipool.service.ProxyCacheService;
 import com.fufu.apipool.service.ProxyService;
 import com.fufu.apipool.domain.vo.ProxyVO;
+import com.github.pagehelper.PageHelper;
+import com.github.pagehelper.PageInfo;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -54,6 +59,51 @@ public class ProxyServiceImpl implements ProxyService {
         int count = poolProxyRelationService.getRelationsByProxyId(id).size();
         vo.setBindCount(count);
         return vo;
+    }
+
+    /**
+     * 分页查询所有代理
+     * @param pageRequest 分页请求参数
+     * @return PageResult<ProxyVO> 分页结果
+     */
+    @Override
+    public PageResult<ProxyVO> selectPage(PageRequest pageRequest) {
+        // 设置分页参数 - 使用SQL安全工具类防止注入
+        String safeOrderClause = SqlSecurityUtil.buildSafeOrderClause(
+            pageRequest.getOrderBy(),
+            pageRequest.getOrderDirection(),
+            SqlSecurityUtil.PROXY_ALLOWED_COLUMNS,
+            "proxy"
+        );
+
+        PageHelper.startPage(pageRequest.getPageNum(), pageRequest.getPageSize(), safeOrderClause);
+
+        // 查询数据
+        List<ProxyEntity> entities = proxyMapper.selectAll();
+        PageInfo<ProxyEntity> pageInfo = new PageInfo<>(entities);
+
+        if (CollectionUtils.isEmpty(entities)) {
+            return PageResult.of(Collections.emptyList(), pageInfo.getTotal(),
+                                pageRequest.getPageNum(), pageRequest.getPageSize());
+        }
+
+        // 1. 提取所有代理ID
+        List<Long> proxyIds = entities.stream()
+                .map(BaseEntity::getId)
+                .collect(Collectors.toList());
+
+        // 2. 一次性批量查询所有代理的绑定数量
+        Map<Long, Integer> countMap = poolProxyRelationService.getBindCountsForProxies(proxyIds);
+
+        // 3. 组装VO列表
+        List<ProxyVO> voList = entities.stream().map(entity -> {
+            ProxyVO vo = ProxyVO.fromEntity(entity);
+            vo.setBindCount(countMap.getOrDefault(entity.getId(), 0));
+            return vo;
+        }).collect(Collectors.toList());
+
+        return PageResult.of(voList, pageInfo.getTotal(),
+                           pageRequest.getPageNum(), pageRequest.getPageSize());
     }
 
     /**

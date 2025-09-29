@@ -5,6 +5,7 @@ import cn.dev33.satoken.exception.NotRoleException;
 import com.fufu.apipool.common.Result;
 import com.fufu.apipool.common.ResultUtil;
 import com.fufu.apipool.common.constant.CommonRespCode;
+import com.fufu.apipool.common.exception.ApiAuthException;
 import com.fufu.apipool.common.exception.BusinessException;
 import com.fufu.apipool.common.exception.AuthenticationException;
 import lombok.extern.slf4j.Slf4j;
@@ -53,6 +54,22 @@ public class AllExceptionHandle {
     public Result authenticationException(AuthenticationException e) {
         log.warn("认证异常: code={}, message={}", e.getCode(), e.getMessage());
         return ResultUtil.getFailResult("", e.getCode(), e.getMessage());
+    }
+
+    /**
+     * API认证异常处理
+     */
+    @ExceptionHandler(ApiAuthException.class)
+    public Result apiAuthException(ApiAuthException e) {
+        log.warn("API认证异常: poolId={}, statusCode={}, message={}", e.getPoolId(), e.getStatusCode(), e.getMessage());
+
+        String errorCode = "API_AUTH_ERROR";
+        if (e.isAuthExpired()) {
+            errorCode = "API_AUTH_EXPIRED";
+        }
+
+        String message = String.format("号池认证失败 (ID: %s): %s", e.getPoolId(), e.getMessage());
+        return ResultUtil.getFailResult("", errorCode, message);
     }
     
     /**

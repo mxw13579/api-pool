@@ -2,6 +2,8 @@ package com.fufu.apipool.controller;
 
 import com.fufu.apipool.common.Result;
 import com.fufu.apipool.common.ResultUtil;
+import com.fufu.apipool.domain.dto.PageRequest;
+import com.fufu.apipool.domain.vo.PageResult;
 import com.fufu.apipool.domain.dto.ProxyBatchesEntity;
 import com.fufu.apipool.domain.vo.ProxyVO;
 import com.fufu.apipool.entity.ProxyEntity;
@@ -26,12 +28,24 @@ public class ProxyController {
     private final ProxyService proxyService;
 
     /**
-     * 查询所有代理
+     * 分页查询代理列表
+     *
+     * @param pageRequest 分页请求参数
+     * @return Result对象，包含分页结果
+     */
+    @GetMapping("/list")
+    public Result<PageResult<ProxyVO>> list(PageRequest pageRequest) {
+        PageResult<ProxyVO> pageResult = proxyService.selectPage(pageRequest);
+        return ResultUtil.getSuccessResult(pageResult);
+    }
+
+    /**
+     * 查询所有代理（保持向后兼容）
      *
      * @return Result对象，包含代理列表
      */
-    @GetMapping("/list")
-    public Result<List<ProxyVO>> list() {
+    @GetMapping("/list/all")
+    public Result<List<ProxyVO>> listAll() {
         List<ProxyVO> list = proxyService.selectAll();
         return ResultUtil.getSuccessResult(list);
     }

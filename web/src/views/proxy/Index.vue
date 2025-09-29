@@ -4,16 +4,7 @@
     <div class="header-toolbar">
       <el-button type="primary" @click="handleAdd" :icon="Plus" size="large">新增代理</el-button>
       <el-button type="success" @click="handleBatchAdd" :icon="Plus" size="large" class="ml-3">批量添加</el-button>
-<el-button type="danger" @click="handleBatchDelete" :icon="Delete" size="large" :disabled="selectedProxies.length === 0" class="ml-3">批量删除</el-button>
-      <el-checkbox
-          v-model="isAllSelected"
-          :indeterminate="isIndeterminate"
-          @change="toggleSelectAll"
-          size="large"
-          class="select-all-checkbox ml-3 mr-4"
-      >
-        全选
-      </el-checkbox>
+      <el-button type="danger" @click="handleBatchDelete" :icon="Delete" size="large" :disabled="selectedProxies.length === 0" class="ml-3">批量删除</el-button>
     </div>
 
     <div v-if="loading" class="loading-state">
@@ -21,53 +12,95 @@
       <p>正在加载代理数据...</p>
     </div>
 
-    <el-row :gutter="24" v-else>
-      <el-col :xs="24" :sm="12" :md="8" v-for="proxy in proxies" :key="proxy.id">
-        <el-card class="themed-card" shadow="always">
-          <template #header>
-            <div class="card-header">
-              <el-checkbox v-model="selectedProxies" :label="proxy.id" size="large" class="mr-3" style="height: 20px" @change="handleSelectionChange" />
-              <span class="card-title">{{ proxy.name }}</span>
-              <el-dropdown trigger="click">
-                <el-button text :icon="MoreFilled" class="more-options-btn" />
-                <template #dropdown>
-                  <el-dropdown-menu>
-                    <el-dropdown-item @click="handleEdit(proxy)" :icon="Edit">编辑</el-dropdown-item>
-                    <el-dropdown-item @click="handleDelete(proxy.id)" :icon="Delete" class="delete-item">删除</el-dropdown-item>
-                  </el-dropdown-menu>
-                </template>
-              </el-dropdown>
-            </div>
-          </template>
+    <el-table
+      v-else
+      :data="proxies"
+      style="width: 100%"
+      @selection-change="handleTableSelectionChange"
+      class="proxy-table"
+    >
+      <el-table-column type="selection" width="55" />
 
-          <div class="card-content">
-            <div class="info-item">
-              <el-icon><Link /></el-icon>
-              <span>{{ proxy.proxyUrl }}</span>
-            </div>
-            <div class="info-item">
-              <el-icon><Compass /></el-icon>
-              <span><strong>来源:</strong> {{ proxy.source || 'N/A' }}</span>
-            </div>
-            <div class="info-item">
-              <el-icon><Location /></el-icon>
-              <span><strong>地址:</strong> {{ proxy.address || 'N/A' }}</span>
-            </div>
+      <el-table-column prop="name" label="名称" min-width="120">
+        <template #default="{ row }">
+          <span class="proxy-name">{{ row.name }}</span>
+        </template>
+      </el-table-column>
+
+      <el-table-column prop="proxyUrl" label="代理URL" min-width="200">
+        <template #default="{ row }">
+          <div class="url-cell">
+            <el-icon class="url-icon"><Link /></el-icon>
+            <span class="url-text">{{ row.proxyUrl }}</span>
           </div>
+        </template>
+      </el-table-column>
 
-          <template #footer>
-            <div class="card-footer">
-              <el-tag :type="proxy.status === 1 ? 'success' : 'danger'" round>
-                {{ proxy.status === 1 ? '启用' : '禁用' }}
-              </el-tag>
-              <el-tag type="info" round effect="light">
-                绑定号池: {{ proxy.bindCount }}
-              </el-tag>
-            </div>
-          </template>
-        </el-card>
-      </el-col>
-    </el-row>
+      <el-table-column prop="source" label="来源" min-width="100">
+        <template #default="{ row }">
+          <span>{{ row.source || 'N/A' }}</span>
+        </template>
+      </el-table-column>
+
+      <el-table-column prop="address" label="地址" min-width="120">
+        <template #default="{ row }">
+          <span>{{ row.address || 'N/A' }}</span>
+        </template>
+      </el-table-column>
+
+      <el-table-column prop="status" label="状态" width="80">
+        <template #default="{ row }">
+          <el-tag :type="row.status === 1 ? 'success' : 'danger'" size="small">
+            {{ row.status === 1 ? '启用' : '禁用' }}
+          </el-tag>
+        </template>
+      </el-table-column>
+
+      <el-table-column prop="bindCount" label="绑定号池" width="100">
+        <template #default="{ row }">
+          <el-tag type="info" size="small" effect="light">
+            {{ row.bindCount || 0 }}
+          </el-tag>
+        </template>
+      </el-table-column>
+
+      <el-table-column label="操作" width="120" fixed="right">
+        <template #default="{ row }">
+          <el-button
+            type="primary"
+            size="small"
+            :icon="Edit"
+            @click="handleEdit(row)"
+            link
+          >
+            编辑
+          </el-button>
+          <el-button
+            type="danger"
+            size="small"
+            :icon="Delete"
+            @click="handleDelete(row.id)"
+            link
+          >
+            删除
+          </el-button>
+        </template>
+      </el-table-column>
+    </el-table>
+
+    <!-- 分页组件 -->
+    <div class="pagination-container">
+      <el-pagination
+        v-model:current-page="pagination.pageNum"
+        v-model:page-size="pagination.pageSize"
+        :page-sizes="[10, 20, 50, 100]"
+        :total="pagination.total"
+        layout="total, sizes, prev, pager, next, jumper"
+        @size-change="handleSizeChange"
+        @current-change="handlePageChange"
+        class="pagination"
+      />
+    </div>
 
     <!-- Form Dialogs are unchanged -->
      <el-dialog v-model="dialogVisible" :title="dialogTitle" width="500px">
@@ -128,10 +161,10 @@
 
 <script setup lang="ts">
 import { ref, onMounted } from 'vue';
-import { getProxyList, addProxy, updateProxy, deleteProxy, addProxyBatches, deleteProxyBatches } from '@/api/proxy';
+import { getProxyList, addProxy, updateProxy, deleteProxy, addProxyBatches, deleteProxyBatches, type PageRequest, type PageResult } from '@/api/proxy';
 import type { ProxyEntity } from '@/types';
 import { ElMessage, ElMessageBox } from 'element-plus';
-import { Plus, Loading, MoreFilled, Edit, Delete, Link, Location, Compass } from '@element-plus/icons-vue';
+import { Plus, Loading, Edit, Delete, Link } from '@element-plus/icons-vue';
 import { computed, watch } from 'vue';
 
 
@@ -143,10 +176,53 @@ const dialogVisible = ref(false);
 const dialogTitle = ref('');
 const form = ref<Partial<ProxyEntity>>({ status: 1 });
 
+// 分页相关状态
+const pagination = ref({
+  pageNum: 1,
+  pageSize: 10,
+  total: 0,
+  totalPages: 0
+});
+
 const fetchProxies = async () => {
   loading.value = true;
-  proxies.value = await getProxyList();
-  loading.value = false;
+  try {
+    const params: PageRequest = {
+      pageNum: pagination.value.pageNum,
+      pageSize: pagination.value.pageSize,
+      orderBy: 'created_at',
+      orderDirection: 'desc'
+    };
+
+    const result: PageResult<ProxyEntity> = await getProxyList(params);
+    proxies.value = result.items;
+    pagination.value.total = result.total;
+    pagination.value.totalPages = result.totalPages;
+
+    // 清理失效的选择项
+    if (selectedProxies.value.length > 0) {
+      selectedProxies.value = selectedProxies.value.filter(id =>
+        proxies.value.some(p => p.id === id)
+      );
+    }
+  } catch (error) {
+    console.error('获取代理列表失败:', error);
+    ElMessage.error('获取代理列表失败');
+  } finally {
+    loading.value = false;
+  }
+};
+
+// 分页变化处理
+const handlePageChange = (page: number) => {
+  pagination.value.pageNum = page;
+  fetchProxies();
+};
+
+const handleSizeChange = (size: number) => {
+  pagination.value.pageSize = size;
+  pagination.value.pageNum = 1; // 重置到第一页
+  fetchProxies();
 };
 
 onMounted(fetchProxies);
@@ -183,14 +259,16 @@ const handleDelete = (id: number) => {
   });
 };
 
+// 表格选择变化事件
+const handleTableSelectionChange = (selection: ProxyEntity[]) => {
+  selectedProxies.value = selection.map(item => item.id);
+};
+
+// 全选状态计算 - 基于表格选择
 const isAllSelected = computed({
   get: () => proxies.value.length > 0 && selectedProxies.value.length === proxies.value.length,
   set: (val: boolean) => {
-    if (val) {
-      selectedProxies.value = proxies.value.map(p => p.id);
-    } else {
-      selectedProxies.value = [];
-    }
+    // 这个功能将由表格的全选checkbox自动处理
   }
 });
 
@@ -210,10 +288,6 @@ watch(proxies, () => {
   }
 });
 
-// 全选切换事件（可选，主要用于兼容 el-checkbox 的 @change 事件）
-const toggleSelectAll = (val: boolean) => {
-  isAllSelected.value = val;
-};
 
 const batchDialogVisible = ref(false);
 const batchForm = ref({
@@ -247,7 +321,7 @@ const handleBatchSubmit = async () => {
 };
 
 const handleSelectionChange = () => {
-  // 可以在这里处理选中变化的逻辑，如果需要的话
+  // 保留兼容性，实际由handleTableSelectionChange处理
 };
 
 const handleBatchDelete = () => {
@@ -289,106 +363,63 @@ const handleBatchDelete = () => {
   margin-bottom: 10px;
 }
 
-.themed-card {
-    margin-bottom: 24px;
-    --el-card-padding: 0;
+/* 表格样式 */
+.proxy-table {
+  margin-top: 8px;
 }
 
-:deep(.el-card__header) {
-  border-bottom: 1px solid var(--accent-color-light);
-  padding: 16px 20px;
-}
-
-.card-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
-
-.card-title {
-  font-size: 1.1rem;
+.proxy-name {
   font-weight: 600;
-  color: var(--text-primary);
+  color: var(--text-primary, #303133);
 }
 
-.more-options-btn {
-  color: #8cb4d2;
-}
-.more-options-btn:hover {
-  color: var(--accent-color);
-  background-color: var(--accent-color-light);
-}
-
-.delete-item {
-  color: var(--el-color-danger);
-}
-.delete-item:hover {
-    background-color: var(--el-color-danger-light-9);
-    color: var(--el-color-danger);
-}
-
-.card-content {
-  padding: 20px;
-}
-
-.info-item {
+.url-cell {
   display: flex;
   align-items: center;
   gap: 8px;
-  margin-bottom: 12px;
-  color: var(--text-secondary);
+}
+
+.url-icon {
+  color: var(--text-muted, #909399);
+  font-size: 14px;
+}
+
+.url-text {
   word-break: break-all;
-}
-.info-item .el-icon {
-  font-size: 16px;
-  color: var(--text-muted);
-  flex-shrink: 0;
-}
-.info-item strong {
-  color: var(--text-primary);
-  margin-right: 5px;
+  color: var(--text-secondary, #606266);
 }
 
-:deep(.el-card__footer) {
-  border-top: 1px solid var(--accent-color-light);
-  padding: 12px 20px;
-  background-color: var(--card-footer-bg);
+/* 响应式表格 */
+@media (max-width: 768px) {
+  .proxy-table .el-table__body-wrapper {
+    overflow-x: auto;
+  }
+
+  .proxy-table .el-table__row {
+    font-size: 14px;
+  }
 }
 
-.card-footer {
+/* 分页样式 */
+.pagination-container {
+  margin-top: 24px;
   display: flex;
-  justify-content: space-between;
-  align-items: center;
+  justify-content: center;
 }
-.select-all-checkbox {
-  height: 48px;  /* 与 large 按钮高度对齐 */
-  display: flex;
-  align-items: center;
-  padding: 0 18px;
-  border: 1.5px solid var(--el-color-primary);
-  border-radius: 6px;  /* 与按钮圆角一致 */
+
+.pagination {
   background: #fff;
-  font-weight: 500;  /* 减轻字重 */
-  color: var(--el-color-primary);
-  box-shadow: 0 2px 8px 0 rgba(64,158,255,0.06);
-  transition: background 0.2s, border 0.2s, color 0.2s;
-  cursor: pointer;
-}
-.select-all-checkbox:hover {
-  background: #f4faff;
-  border-color: var(--el-color-primary-dark-2);
-  color: var(--el-color-primary-dark-2);
-}
-.select-all-checkbox .el-checkbox__label {
-  font-size: 16px;
-  font-weight: 500;  /* 与外层一致 */
-  padding-left: 4px;
 }
 
-.header-toolbar {
-  margin-bottom: 24px;
-  display: flex;
-  align-items: center; /* 垂直居中所有按钮和全选 */
+/* 响应式分页 */
+@media (max-width: 768px) {
+  .pagination-container {
+    margin-top: 16px;
+  }
+
+  .pagination .el-pagination__editor {
+    width: 60px;
+  }
 }
 
 

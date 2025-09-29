@@ -84,7 +84,17 @@ service.interceptors.response.use(
                 setTimeout(() => {
                     window.location.href = '/login';
                 }, 1500);
-            } else {
+            }
+            // API认证异常处理
+            else if (res.code === 'API_AUTH_EXPIRED') {
+                ElMessage.warning('号池认证已失效，系统将自动重试');
+                console.warn('API认证失效:', res.msg);
+            }
+            else if (res.code === 'API_AUTH_ERROR') {
+                ElMessage.error('号池认证失败: ' + (res.msg || '请检查号池配置'));
+                console.error('API认证错误:', res.msg);
+            }
+            else {
                 // 其他所有业务错误，直接弹出错误信息
                 ElMessage.error(res.msg || '操作失败');
             }

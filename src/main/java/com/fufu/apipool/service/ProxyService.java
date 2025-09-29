@@ -1,6 +1,8 @@
 package com.fufu.apipool.service;
 
+import com.fufu.apipool.domain.dto.PageRequest;
 import com.fufu.apipool.domain.dto.ProxyBatchesEntity;
+import com.fufu.apipool.domain.vo.PageResult;
 import com.fufu.apipool.domain.vo.ProxyVO;
 import com.fufu.apipool.entity.ProxyEntity;
 
@@ -19,6 +21,13 @@ public interface ProxyService {
      * @return 代理实体
      */
     ProxyVO selectById(Long id);
+
+    /**
+     * 分页查询代理列表
+     * @param pageRequest 分页请求参数
+     * @return 分页结果
+     */
+    PageResult<ProxyVO> selectPage(PageRequest pageRequest);
 
     /**
      * 查询所有代理

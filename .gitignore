@@ -13,9 +13,19 @@ target/
 .springBeans
 .sts4-cache
 **/ChannelAddUtil*
-**/Kyes1.text
+# 凭据和敏感信息文件
+**/Kyes*.text
+**/Key*.text
+**/key*.text
 **/proxy.text
 **/upstreamUrlList.text
+**/*credential*
+**/*secret*
+**/*password*
+**/*token*
+**/*.pem
+**/*.key
+**/.env*
 ### IntelliJ IDEA ###
 .idea
 *.iws
@@ -40,3 +50,6 @@ build/
 /.idea/
 /data/
 /web/package-lock.json
+/docs/
+/.spec-workflow/
+/AGENTS.md

@@ -1,9 +1,31 @@
 ﻿import request from './index';
 import type { ProxyEntity } from '@/types';
 
-/** 获取代理列表 */
-export const getProxyList = (): Promise<ProxyEntity[]> => {
-    return request.get('/proxy/list').then(res => res.data);
+/** 分页查询参数 */
+export interface PageRequest {
+  pageNum?: number;
+  pageSize?: number;
+  orderBy?: string;
+  orderDirection?: 'asc' | 'desc';
+}
+
+/** 分页结果 */
+export interface PageResult<T> {
+  items: T[];
+  total: number;
+  pageNum: number;
+  pageSize: number;
+  totalPages: number;
+}
+
+/** 分页获取代理列表 */
+export const getProxyList = (params?: PageRequest): Promise<PageResult<ProxyEntity>> => {
+    return request.get('/proxy/list', { params }).then(res => res.data);
+};
+
+/** 获取所有代理列表（不分页） */
+export const getAllProxyList = (): Promise<ProxyEntity[]> => {
+    return request.get('/proxy/list/all').then(res => res.data);
 };
 
 /** 新增代理 */
