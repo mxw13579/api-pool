@@ -4,30 +4,32 @@
     <div class="header-toolbar">
       <el-button type="primary" @click="handleAdd" :icon="Plus" size="large">新增代理</el-button>
       <el-button type="success" @click="handleBatchAdd" :icon="Plus" size="large" class="ml-3">批量添加</el-button>
-      <el-button type="danger" @click="handleBatchDelete" :icon="Delete" size="large" :disabled="selectedProxies.length === 0" class="ml-3">批量删除</el-button>
+      <el-button type="danger" @click="handleBatchDelete" :icon="Delete" size="large" class="ml-3">批量删除</el-button>
     </div>
 
-    <div v-if="loading" class="loading-state">
-      <el-icon class="is-loading" size="40"><Loading /></el-icon>
-      <p>正在加载代理数据...</p>
-    </div>
+    <!-- 表格卡片容器 -->
+    <div class="table-card">
+      <div v-if="loading" class="loading-state">
+        <el-icon class="is-loading" size="40"><Loading /></el-icon>
+        <p>正在加载代理数据...</p>
+      </div>
 
-    <el-table
-      v-else
-      :data="proxies"
-      style="width: 100%"
-      @selection-change="handleTableSelectionChange"
-      class="proxy-table"
-    >
+      <el-table
+        v-else
+        :data="proxies"
+        style="width: 100%"
+        @selection-change="handleTableSelectionChange"
+        class="proxy-table"
+      >
       <el-table-column type="selection" width="55" />
 
-      <el-table-column prop="name" label="名称" min-width="120">
+      <el-table-column prop="name" label="名称" min-width="80">
         <template #default="{ row }">
           <span class="proxy-name">{{ row.name }}</span>
         </template>
       </el-table-column>
 
-      <el-table-column prop="proxyUrl" label="代理URL" min-width="200">
+      <el-table-column prop="proxyUrl" label="代理URL" min-width="240">
         <template #default="{ row }">
           <div class="url-cell">
             <el-icon class="url-icon"><Link /></el-icon>
@@ -36,13 +38,13 @@
         </template>
       </el-table-column>
 
-      <el-table-column prop="source" label="来源" min-width="100">
+      <el-table-column prop="source" label="来源" min-width="40">
         <template #default="{ row }">
           <span>{{ row.source || 'N/A' }}</span>
         </template>
       </el-table-column>
 
-      <el-table-column prop="address" label="地址" min-width="120">
+      <el-table-column prop="address" label="地址" min-width="40">
         <template #default="{ row }">
           <span>{{ row.address || 'N/A' }}</span>
         </template>
@@ -56,7 +58,7 @@
         </template>
       </el-table-column>
 
-      <el-table-column prop="bindCount" label="绑定号池" width="100">
+      <el-table-column prop="bindCount" label="绑定号池" width="80">
         <template #default="{ row }">
           <el-tag type="info" size="small" effect="light">
             {{ row.bindCount || 0 }}
@@ -64,43 +66,40 @@
         </template>
       </el-table-column>
 
-      <el-table-column label="操作" width="120" fixed="right">
+      <el-table-column label="操作" width="360" fixed="right" class-name="action-column">
         <template #default="{ row }">
-          <el-button
-            type="primary"
-            size="small"
-            :icon="Edit"
-            @click="handleEdit(row)"
-            link
-          >
-            编辑
-          </el-button>
-          <el-button
-            type="danger"
-            size="small"
-            :icon="Delete"
-            @click="handleDelete(row.id)"
-            link
-          >
-            删除
-          </el-button>
+          <div class="action-links">
+            <el-link type="primary" :underline="false" @click="handleEdit(row)">
+              <el-icon class="link-icon"><Edit /></el-icon>
+              <span>编辑</span>
+            </el-link>
+            <span class="action-divider" />
+            <el-link type="danger" :underline="false" @click="handleDelete(row.id)">
+              <el-icon class="link-icon"><Delete /></el-icon>
+              <span>删除</span>
+            </el-link>
+          </div>
         </template>
       </el-table-column>
-    </el-table>
+      </el-table>
 
-    <!-- 分页组件 -->
-    <div class="pagination-container">
-      <el-pagination
-        v-model:current-page="pagination.pageNum"
-        v-model:page-size="pagination.pageSize"
-        :page-sizes="[10, 20, 50, 100]"
-        :total="pagination.total"
-        layout="total, sizes, prev, pager, next, jumper"
-        @size-change="handleSizeChange"
-        @current-change="handlePageChange"
-        class="pagination"
-      />
+      <!-- 分页组件 -->
+      <div class="pagination-container">
+        <div class="pagination-card">
+          <el-pagination
+            v-model:current-page="pagination.pageNum"
+            v-model:page-size="pagination.pageSize"
+            :page-sizes="[10, 20, 50, 100]"
+            :total="pagination.total"
+            layout="total, sizes, prev, pager, next, jumper"
+            @size-change="handleSizeChange"
+            @current-change="handlePageChange"
+            class="pagination"
+          />
+        </div>
+      </div>
     </div>
+    <!-- 表格卡片容器结束 -->
 
     <!-- Form Dialogs are unchanged -->
      <el-dialog v-model="dialogVisible" :title="dialogTitle" width="500px">
@@ -325,6 +324,11 @@ const handleSelectionChange = () => {
 };
 
 const handleBatchDelete = () => {
+  if (selectedProxies.value.length === 0) {
+    ElMessage.warning('请先选择要删除的代理');
+    return;
+  }
+
   ElMessageBox.confirm(`确定要删除选中的 ${selectedProxies.value.length} 个代理吗?`, '警告', {
     confirmButtonText: '确定',
     cancelButtonText: '取消',
@@ -339,105 +343,621 @@ const handleBatchDelete = () => {
 </script>
 
 <style scoped>
-/* Using shared styles from theme.css */
+/* ==================== 页面容器样式 ==================== */
 .page-container {
-  /* This class can be empty if layout provides the background */
+  padding: var(--space-lg);
+  background-color: var(--bg-base);
+  min-height: calc(100vh - 60px); /* 减去头部高度 */
 }
 
+/* 表格卡片容器 */
+.table-card {
+  background: var(--bg-card);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-sm);
+  padding: var(--space-lg);
+  margin-top: var(--space-md);
+  border: 1px solid var(--border-color);
+}
+
+/* ==================== 工具栏样式 ==================== */
 .header-toolbar {
-  margin-bottom: 24px;
   display: flex;
   flex-wrap: wrap;
-  gap: 12px;
+  gap: var(--space-md);
+  margin-bottom: 0; /* 移除底部边距，由table-card的margin-top处理 */
 }
 
+/* 按钮组优化 */
+.header-toolbar :deep(.el-button) {
+  height: var(--button-height-md);
+  padding: 0 var(--space-lg);
+  font-weight: var(--font-weight-medium);
+  border-radius: var(--radius-sm);
+  transition: var(--transition-all);
+  border: none;
+}
+
+/* 按钮悬停效果 */
+.header-toolbar :deep(.el-button:hover) {
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-hover);
+}
+
+/* 按钮激活效果 */
+.header-toolbar :deep(.el-button:active) {
+  transform: translateY(0);
+}
+
+/* 禁用按钮样式 */
+.header-toolbar :deep(.el-button.is-disabled) {
+  opacity: 0.5;
+  cursor: not-allowed;
+  transform: none !important;
+  box-shadow: none !important;
+}
+
+/* 主要按钮 */
+.header-toolbar :deep(.el-button--primary) {
+  background: linear-gradient(135deg, var(--primary-color) 0%, var(--primary-hover) 100%);
+  color: var(--text-inverse);
+}
+
+.header-toolbar :deep(.el-button--primary:hover) {
+  background: linear-gradient(135deg, var(--primary-hover) 0%, var(--primary-active) 100%);
+}
+
+/* 成功按钮 */
+.header-toolbar :deep(.el-button--success) {
+  background: var(--success-color);
+  color: var(--text-inverse);
+}
+
+.header-toolbar :deep(.el-button--success:hover) {
+  background: var(--success-hover);
+}
+
+/* 危险按钮 */
+.header-toolbar :deep(.el-button--danger) {
+  background: var(--danger-color);
+  color: var(--text-inverse);
+}
+
+.header-toolbar :deep(.el-button--danger:hover) {
+  background: var(--danger-hover);
+}
+
+/* 强制批量删除按钮始终保持启用状态的样式 */
+.header-toolbar :deep(.el-button--danger.is-disabled) {
+  opacity: 1 !important;
+  cursor: pointer !important;
+  background: var(--danger-color) !important;
+}
+
+.header-toolbar :deep(.el-button--danger.is-disabled:hover) {
+  background: var(--danger-hover) !important;
+  transform: translateY(-1px) !important;
+  box-shadow: var(--shadow-hover) !important;
+}
+
+/* 按钮图标间距 */
+.header-toolbar :deep(.el-button .el-icon) {
+  margin-right: var(--space-xs);
+}
+
+/* ==================== 加载状态 ==================== */
 .loading-state {
   display: flex;
   flex-direction: column;
   justify-content: center;
   align-items: center;
-  height: 300px;
-  color: var(--text-muted);
+  height: 400px;
+  color: var(--text-tertiary);
 }
+
 .loading-state .el-icon {
-  margin-bottom: 10px;
+  margin-bottom: var(--space-md);
+  color: var(--primary-color);
 }
 
-/* 表格样式 */
+.loading-state p {
+  font-size: var(--font-size-base);
+  margin-top: var(--space-sm);
+}
+
+/* ==================== 表格样式优化 ==================== */
 .proxy-table {
-  margin-top: 8px;
+  margin-top: 0;
+  border-radius: var(--radius-sm);
+  overflow: hidden;
 }
 
+/* 表头样式 */
+.proxy-table :deep(.el-table__header-wrapper) {
+  background-color: #f8fafc;
+}
+
+.proxy-table :deep(.el-table__header th) {
+  background-color: #f8fafc !important;
+  color: var(--text-secondary);
+  font-weight: var(--font-weight-semibold);
+  font-size: var(--font-size-sm);
+  padding: var(--space-md) var(--space-sm);
+  border-bottom: 2px solid var(--border-color);
+}
+
+/* 表格边框 */
+.proxy-table :deep(.el-table) {
+  border: 1px solid var(--border-light);
+  border-radius: var(--radius-sm);
+}
+
+.proxy-table :deep(.el-table td),
+.proxy-table :deep(.el-table th.is-leaf) {
+  border-bottom: 1px solid var(--border-light);
+}
+
+/* 单元格样式 */
+.proxy-table :deep(.el-table__body td) {
+  padding: var(--space-md) var(--space-sm);
+  color: var(--text-primary);
+  font-size: var(--font-size-base);
+}
+
+/* 表格行悬停效果 */
+.proxy-table :deep(.el-table__body tr:hover > td) {
+  background-color: var(--bg-hover) !important;
+  transition: background-color var(--transition-base);
+  position: relative;
+}
+
+/* 表格行悬停左侧色条 */
+.proxy-table :deep(.el-table__body tr:hover > td:first-child::before) {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 3px;
+  background: var(--primary-color);
+  transition: width var(--transition-base);
+}
+
+/* 隔行换色（斑马纹） */
+.proxy-table :deep(.el-table__body tr:nth-child(even) > td) {
+  background-color: var(--bg-stripe);
+}
+
+/* 选中行样式 */
+.proxy-table :deep(.el-table__body tr.el-table__row--striped.hover-row > td) {
+  background-color: var(--primary-lighter) !important;
+}
+
+/* ==================== 表格内容样式 ==================== */
 .proxy-name {
-  font-weight: 600;
-  color: var(--text-primary, #303133);
+  font-weight: var(--font-weight-semibold);
+  color: var(--text-primary);
+  font-size: var(--font-size-base);
 }
 
 .url-cell {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: var(--space-sm);
 }
 
 .url-icon {
-  color: var(--text-muted, #909399);
+  color: var(--text-tertiary);
   font-size: 14px;
+  flex-shrink: 0;
 }
 
 .url-text {
   word-break: break-all;
-  color: var(--text-secondary, #606266);
+  color: var(--text-secondary);
+  font-size: var(--font-size-sm);
+  line-height: var(--line-height-normal);
 }
 
-/* 响应式表格 */
-@media (max-width: 768px) {
-  .proxy-table .el-table__body-wrapper {
-    overflow-x: auto;
-  }
-
-  .proxy-table .el-table__row {
-    font-size: 14px;
-  }
+/* ==================== 状态标签和徽章样式 ==================== */
+.proxy-table :deep(.el-tag) {
+  border-radius: var(--radius-xs);
+  padding: 4px 12px;
+  font-weight: var(--font-weight-medium);
+  font-size: var(--font-size-xs);
+  border: none;
+  height: 24px;
+  line-height: 16px;
 }
 
-/* 分页样式 */
+/* 成功状态标签 */
+.proxy-table :deep(.el-tag--success) {
+  background-color: var(--success-lighter);
+  color: var(--success-dark);
+}
+
+/* 危险状态标签 */
+.proxy-table :deep(.el-tag--danger) {
+  background-color: var(--danger-lighter);
+  color: var(--danger-dark);
+}
+
+/* 信息状态标签（绑定数量） */
+.proxy-table :deep(.el-tag--info) {
+  background-color: var(--info-lighter);
+  color: var(--info-dark);
+  font-weight: var(--font-weight-semibold);
+}
+
+/* ==================== 操作按钮样式 ==================== */
+.proxy-table :deep(.action-column .cell) {
+  display: flex;
+  align-items: center;
+}
+
+.action-links {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  font-size: var(--font-size-sm);
+}
+
+.action-links :deep(.el-link) {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 6px 10px;
+  border-radius: var(--radius-xs);
+  font-weight: var(--font-weight-medium);
+  transition: var(--transition-all);
+}
+
+/* 编辑按钮 */
+.action-links :deep(.el-link--primary) {
+  color: var(--primary-color);
+}
+
+.action-links :deep(.el-link--primary:hover) {
+  background: var(--primary-lighter);
+  color: var(--primary-hover);
+}
+
+/* 删除按钮 */
+.action-links :deep(.el-link--danger) {
+  color: var(--danger-color);
+}
+
+.action-links :deep(.el-link--danger:hover) {
+  background: var(--danger-lighter);
+  color: var(--danger-hover);
+}
+
+/* 操作按钮图标动画 */
+.action-links :deep(.el-link:hover .link-icon) {
+  transform: scale(1.1);
+  transition: transform var(--transition-fast);
+}
+
+.action-divider {
+  width: 1px;
+  height: 14px;
+  background: var(--border-color);
+  flex-shrink: 0;
+}
+
+.link-icon {
+  font-size: 15px;
+  transition: var(--transition-transform);
+}
+
+/* ==================== 分页组件样式 ==================== */
 .pagination-container {
-  margin-top: 24px;
+  margin-top: var(--space-lg);
   display: flex;
   justify-content: center;
 }
 
-.pagination {
-  background: #fff;
+.pagination-card {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: var(--space-md);
+  padding: var(--space-md) var(--space-lg);
+  background: transparent;
+  border: none;
+  border-radius: 0;
+  box-shadow: none;
+  min-width: 0;
 }
 
-/* 响应式分页 */
+.pagination-card :deep(.el-pagination) {
+  margin: 0;
+}
+
+/* 分页文字颜色 */
+.pagination-card :deep(.el-pagination__total),
+.pagination-card :deep(.el-pagination__jump) {
+  color: var(--text-secondary);
+  font-size: var(--font-size-sm);
+}
+
+/* 分页选择器 */
+.pagination-card :deep(.el-select .el-input__wrapper) {
+  box-shadow: none;
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-xs);
+  transition: var(--transition-colors);
+}
+
+.pagination-card :deep(.el-select .el-input__wrapper:hover) {
+  border-color: var(--primary-color);
+}
+
+/* 分页输入框 */
+.pagination-card :deep(.el-pagination__editor .el-input__inner) {
+  border-color: var(--border-color);
+  border-radius: var(--radius-xs);
+  transition: var(--transition-colors);
+}
+
+.pagination-card :deep(.el-pagination__editor .el-input__inner:focus) {
+  border-color: var(--primary-color);
+}
+
+/* 分页按钮通用样式 */
+.pagination-card :deep(.el-pagination button),
+.pagination-card :deep(.el-pager li) {
+  border-radius: var(--radius-xs);
+  transition: var(--transition-all);
+  background: transparent;
+  color: var(--text-secondary);
+  font-weight: var(--font-weight-medium);
+}
+
+/* 分页页码 */
+.pagination-card :deep(.el-pager li) {
+  min-width: 32px;
+  height: 32px;
+  line-height: 32px;
+  margin: 0 2px;
+}
+
+/* 分页按钮和页码悬停 */
+.pagination-card :deep(.el-pager li:not(.is-active):hover),
+.pagination-card :deep(.el-pagination button:not(.is-disabled):hover) {
+  background: var(--primary-lighter);
+  color: var(--primary-hover);
+}
+
+/* 当前页码高亮 */
+.pagination-card :deep(.el-pager li.is-active) {
+  background: var(--primary-color);
+  color: var(--text-inverse);
+  font-weight: var(--font-weight-semibold);
+  box-shadow: 0 4px 12px rgba(37, 99, 235, 0.25);
+}
+
+/* 分页按钮禁用状态 */
+.pagination-card :deep(.el-pagination button.is-disabled) {
+  color: var(--text-quaternary);
+  cursor: not-allowed;
+}
+
+/* ==================== 对话框样式 ==================== */
+/* 对话框容器 */
+:deep(.el-dialog) {
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-2xl);
+  padding: 0;
+}
+
+/* 对话框头部 */
+:deep(.el-dialog__header) {
+  padding: var(--space-lg) var(--space-xl);
+  border-bottom: 1px solid var(--border-light);
+  margin: 0;
+}
+
+:deep(.el-dialog__title) {
+  font-size: var(--font-size-xl);
+  font-weight: var(--font-weight-semibold);
+  color: var(--text-primary);
+}
+
+:deep(.el-dialog__headerbtn) {
+  top: var(--space-lg);
+  right: var(--space-lg);
+  width: 32px;
+  height: 32px;
+  font-size: 20px;
+}
+
+:deep(.el-dialog__headerbtn:hover .el-dialog__close) {
+  color: var(--danger-color);
+}
+
+/* 对话框内容 */
+:deep(.el-dialog__body) {
+  padding: var(--space-xl);
+}
+
+/* 表单样式 */
+:deep(.el-form-item) {
+  margin-bottom: var(--space-lg);
+}
+
+:deep(.el-form-item__label) {
+  font-weight: var(--font-weight-medium);
+  color: var(--text-primary);
+  font-size: var(--font-size-base);
+}
+
+/* 输入框 */
+:deep(.el-input__wrapper) {
+  border-radius: var(--radius-sm);
+  box-shadow: none;
+  border: 1px solid var(--border-color);
+  transition: var(--transition-colors);
+  padding: 8px 12px;
+}
+
+:deep(.el-input__wrapper:hover) {
+  border-color: var(--primary-color);
+}
+
+:deep(.el-input__wrapper.is-focus) {
+  border-color: var(--primary-color);
+  box-shadow: 0 0 0 3px var(--primary-lighter);
+}
+
+/* 文本域 */
+:deep(.el-textarea__inner) {
+  border-radius: var(--radius-sm);
+  border-color: var(--border-color);
+  transition: var(--transition-colors);
+  padding: var(--space-sm) var(--space-md);
+  font-size: var(--font-size-base);
+}
+
+:deep(.el-textarea__inner:hover) {
+  border-color: var(--primary-color);
+}
+
+:deep(.el-textarea__inner:focus) {
+  border-color: var(--primary-color);
+  box-shadow: 0 0 0 3px var(--primary-lighter);
+}
+
+/* 开关组件 */
+:deep(.el-switch) {
+  --el-switch-on-color: var(--success-color);
+  --el-switch-off-color: var(--info-color);
+}
+
+/* 对话框底部 */
+:deep(.el-dialog__footer) {
+  padding: var(--space-lg) var(--space-xl);
+  border-top: 1px solid var(--border-light);
+}
+
+/* 对话框按钮组 */
+:deep(.el-dialog__footer .el-button) {
+  min-width: 80px;
+  height: var(--button-height-md);
+  padding: 0 var(--space-lg);
+  border-radius: var(--radius-sm);
+  font-weight: var(--font-weight-medium);
+  transition: var(--transition-all);
+}
+
+:deep(.el-dialog__footer .el-button:hover) {
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-md);
+}
+
+:deep(.el-dialog__footer .el-button--primary) {
+  background: var(--primary-color);
+  border-color: var(--primary-color);
+}
+
+:deep(.el-dialog__footer .el-button--primary:hover) {
+  background: var(--primary-hover);
+  border-color: var(--primary-hover);
+}
+
+/* ==================== 响应式适配 ==================== */
+
+/* 移动端和小屏幕适配（768px以下） */
 @media (max-width: 768px) {
+  /* 页面容器 */
+  .page-container {
+    padding: var(--space-md);
+  }
+
+  /* 表格卡片 */
+  .table-card {
+    padding: var(--space-md);
+    margin-top: var(--space-sm);
+  }
+
+  /* 工具栏按钮组 */
+  .header-toolbar {
+    flex-direction: column;
+    align-items: stretch;
+    gap: var(--space-sm);
+  }
+
+  .header-toolbar .el-button {
+    width: 100%;
+    margin: 0 !important;
+  }
+
+  /* 表格滚动 */
+  .proxy-table :deep(.el-table__body-wrapper) {
+    overflow-x: auto;
+  }
+
+  .proxy-table :deep(.el-table__row) {
+    font-size: var(--font-size-sm);
+  }
+
+  /* 分页组件 */
   .pagination-container {
-    margin-top: 16px;
+    margin-top: var(--space-md);
+    justify-content: center;
   }
 
-  .pagination .el-pagination__editor {
-    width: 60px;
+  .pagination-card {
+    width: 100%;
+    padding: var(--space-sm) var(--space-md);
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: var(--space-sm);
   }
-}
 
+  /* 分页布局调整 */
+  .pagination-card :deep(.el-pagination__sizes),
+  .pagination-card :deep(.el-pagination__total) {
+    flex: 0 0 100%;
+    justify-content: center;
+  }
 
-</style>
+  .pagination-card :deep(.el-pagination__jump) {
+    margin-left: 0 !important;
+  }
 
-<style scoped>
-/* 避免与 Element Plus 默认相邻按钮左外边距叠加 */
-.header-toolbar .el-button + .el-button { margin-left: 0; }
-
-/* 移动端：纵向排列并清理工具类左右边距 */
-@media (max-width: 768px) {
-  .header-toolbar { flex-direction: column; align-items: stretch; gap: 8px; }
-  .header-toolbar .ml-3, .header-toolbar .mr-3, .header-toolbar .mr-4 { margin-left: 0 !important; margin-right: 0 !important; }
-  /* 对当前页面内的对话框统一做移动端宽度适配 */
+  /* 对话框 */
   :deep(.el-dialog) {
     width: 95% !important;
     max-width: 95% !important;
-    margin: 0 auto !important;
+    margin: var(--space-md) auto !important;
+  }
+
+  :deep(.el-dialog__header),
+  :deep(.el-dialog__body),
+  :deep(.el-dialog__footer) {
+    padding: var(--space-md);
   }
 }
+
+/* 平板适配（768px-1024px） */
+@media (min-width: 768px) and (max-width: 1024px) {
+  .page-container {
+    padding: var(--space-lg);
+  }
+
+  .header-toolbar {
+    gap: var(--space-sm);
+  }
+
+  .pagination-card {
+    gap: var(--space-sm);
+  }
+}
+
+/* 去除Element Plus按钮默认边距 */
+.header-toolbar .el-button + .el-button {
+  margin-left: 0;
+}
+
 </style>
